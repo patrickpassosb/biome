@@ -1,0 +1,50 @@
+{
+  "metrics_overview": {
+    "method": "GET",
+    "url": "/metrics/overview",
+    "response": {
+      "weekly_frequency": 3,
+      "total_volume_load_current_week": 12500.5,
+      "active_weak_points_count": 1
+    }
+  },
+  "metrics_trends": {
+    "method": "GET",
+    "url": "/metrics/trends?metric=volume_load",
+    "response": [
+      { "date": "2023-01-01", "value": 5000 },
+      { "date": "2023-01-03", "value": 5500 }
+    ]
+  },
+  "plan_propose": {
+    "method": "POST",
+    "url": "/plan/propose",
+    "response": {
+      "week_start_date": "2026-01-15",
+      "goal": "Hypertrophy",
+      "workouts": [
+        {
+          "day": "Monday",
+          "focus": "Chest",
+          "exercises": [
+            { "name": "Bench Press", "target_sets": 4, "target_reps": "8-12" }
+          ]
+        }
+      ]
+    }
+  },
+  "memory_write": {
+    "method": "POST",
+    "url": "/memory/write",
+    "body": {
+      "created_at": "2026-01-15T10:00:00Z",
+      "type": "reflection",
+      "content": { "text": "Felt good today" },
+      "tags": ["journal"]
+    },
+    "response": {
+      "id": "uuid-string",
+      "status": "stored"
+    }
+  }
+}

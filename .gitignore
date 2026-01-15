@@ -1,0 +1,54 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+.env
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+tmp/
+*.duckdb
+*.duckdb.*
+
+# Node.js
+node_modules/
+dist/
+build/
+.next/
+.cache/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# IDEs and other tools
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Docker
+*.dockerignore
+*.env.local
+
+# Gemini-related files
+.agent/
+gym_data - Sheet1.csv
+backend/data/gym_data.csv
+prompt.md
+
+# OS generated files
+.DS_Store
+.Trashes
+ehthumbs.db
+Icon?
+*.log
+.venv/
+.python-version
+.DS_Store

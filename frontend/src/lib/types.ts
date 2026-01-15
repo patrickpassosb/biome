@@ -1,0 +1,66 @@
+export type OverviewMetrics = {
+  weekly_frequency: number;
+  total_volume_load_current_week: number;
+  active_weak_points_count: number;
+};
+
+export type TrendMetric =
+  | "volume_load"
+  | "average_rpe"
+  | "max_weight"
+  | "weekly_frequency";
+
+export type TrendPoint = {
+  date: string;
+  value: number;
+};
+
+export type WeeklyPlan = {
+  week_start_date: string;
+  goal: string;
+  workouts: Array<{
+    day:
+      | "Monday"
+      | "Tuesday"
+      | "Wednesday"
+      | "Thursday"
+      | "Friday"
+      | "Saturday"
+      | "Sunday";
+    focus: string;
+    exercises: Array<{
+      name: string;
+      target_sets: number;
+      target_reps: string;
+      target_rpe?: number;
+      notes?: string;
+    }>;
+  }>;
+};
+
+export type CoachFinding = {
+  type:
+    | "weak_point"
+    | "progress"
+    | "consistency"
+    | "volume_alert"
+    | "technique_note";
+  message: string;
+  severity: "info" | "warning" | "critical";
+  related_metric?:
+    | "volume_load"
+    | "average_rpe"
+    | "max_weight"
+    | "weekly_frequency"
+    | "set_count"
+    | "failure_rate";
+  related_exercise?: string;
+};
+
+export type MemoryRecord = {
+  id?: string;
+  created_at: string;
+  type: "plan_snapshot" | "finding_snapshot" | "user_feedback" | "reflection";
+  content: Record<string, unknown>;
+  tags?: string[];
+};

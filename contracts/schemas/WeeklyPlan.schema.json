@@ -1,0 +1,59 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "WeeklyPlan",
+  "type": "object",
+  "properties": {
+    "week_start_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "goal": {
+      "type": "string",
+      "description": "The specific focus for this week (e.g., 'Increase squat volume')"
+    },
+    "workouts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "day": {
+            "type": "string",
+            "enum": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+          },
+          "focus": {
+            "type": "string",
+            "description": "Main muscle group or workout type (e.g., 'Push Day')"
+          },
+          "exercises": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "target_sets": {
+                  "type": "integer"
+                },
+                "target_reps": {
+                  "type": "string",
+                  "description": "Range or specific number (e.g., '8-12')"
+                },
+                "target_rpe": {
+                  "type": "number",
+                  "description": "Target RPE for the exercise"
+                },
+                 "notes": {
+                    "type": "string"
+                 }
+              },
+              "required": ["name", "target_sets", "target_reps"]
+            }
+          }
+        },
+        "required": ["day", "focus", "exercises"]
+      }
+    }
+  },
+  "required": ["week_start_date", "goal", "workouts"]
+}

@@ -1,0 +1,40 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "MemoryRecord",
+    "type": "object",
+    "properties": {
+        "id": {
+            "type": "string",
+            "description": "Unique ID of the memory record"
+        },
+        "created_at": {
+            "type": "string",
+            "format": "date-time"
+        },
+        "type": {
+            "type": "string",
+            "enum": [
+                "plan_snapshot",
+                "finding_snapshot",
+                "user_feedback",
+                "reflection"
+            ]
+        },
+        "content": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "Structured content of the memory (e.g., the plan object or finding object)"
+        },
+        "tags": {
+            "type": "array",
+            "items": {
+                "type": "string"
+            }
+        }
+    },
+    "required": [
+        "created_at",
+        "type",
+        "content"
+    ]
+}

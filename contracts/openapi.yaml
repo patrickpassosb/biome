@@ -1,0 +1,169 @@
+openapi: 3.1.0
+info:
+  title: Biome Training Intelligence API
+  version: 1.0.0
+  description: |
+    API for Training Intelligence Dashboard (Biome).
+    Strictly follows defined JSON schemas for Plans, Findings, and Memory.
+
+paths:
+  /metrics/overview:
+    get:
+      summary: Get overview key metrics
+      tags: [Metrics]
+      responses:
+        '200':
+          description: Key performance indicators
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  weekly_frequency: { type: integer }
+                  total_volume_load_current_week: { type: number }
+                  active_weak_points_count: { type: integer }
+
+  /metrics/trends:
+    get:
+      summary: Get historical trends for metrics
+      tags: [Metrics]
+      parameters:
+        - name: metric
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [volume_load, average_rpe, max_weight, weekly_frequency]
+      responses:
+        '200':
+          description: Trend data points
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    date: { type: string, format: date }
+                    value: { type: number }
+
+  /plan/propose:
+    post:
+      summary: Generate a new weekly plan
+      tags: [Plan]
+      responses:
+        '200':
+          description: Proposed plan
+          content:
+            application/json:
+              schema:
+                $ref: './schemas/WeeklyPlan.schema.json'
+
+  /plan/revise:
+    post:
+      summary: Revise an existing plan based on feedback
+      tags: [Plan]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                current_plan:
+                  $ref: './schemas/WeeklyPlan.schema.json'
+                feedback:
+                  type: string
+      responses:
+        '200':
+          description: Revised plan
+          content:
+            application/json:
+              schema:
+                $ref: './schemas/WeeklyPlan.schema.json'
+
+  /plan/validate:
+    post:
+      summary: Validate a plan against rules
+      tags: [Plan]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: './schemas/WeeklyPlan.schema.json'
+      responses:
+        '200':
+          description: Validation result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  valid: { type: boolean }
+                  issues:
+                    type: array
+                    items: { type: string }
+
+  /memory/write:
+    post:
+      summary: Store a memory record
+      tags: [Memory]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: './schemas/MemoryRecord.schema.json'
+      responses:
+        '200':
+          description: Record stored
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id: { type: string }
+                  status: { type: string }
+
+  /memory/search:
+    post:
+      summary: Search memory records
+      tags: [Memory]
+      requestBody:
+        required: true
+         content:
+           application/json:
+             schema:
+               type: object
+               properties:
+                 query: { type: string }
+                 type: { type: string }
+                 limit: { type: integer }
+      responses:
+        '200':
+          description: Search results
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: './schemas/MemoryRecord.schema.json'
+
+  /memory/timeline:
+    get:
+      summary: Get chronological memory timeline
+      tags: [Memory]
+      parameters:
+        - name: limit
+          in: query
+          schema: { type: integer, default: 20 }
+      responses:
+        '200':
+          description: Timeline
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: './schemas/MemoryRecord.schema.json'
