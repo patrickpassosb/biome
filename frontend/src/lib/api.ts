@@ -4,7 +4,17 @@ import type {
   TrendMetric,
   TrendPoint,
   WeeklyPlan,
+  RevisePlanRequest,
 } from "./types";
+
+export type {
+  MemoryRecord,
+  OverviewMetrics,
+  TrendMetric,
+  TrendPoint,
+  WeeklyPlan,
+  RevisePlanRequest,
+};
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
 
@@ -41,10 +51,10 @@ export function proposeWeeklyPlan() {
   });
 }
 
-export function reviseWeeklyPlan(currentPlan: WeeklyPlan, feedback: string) {
+export function reviseWeeklyPlan(req: RevisePlanRequest) {
   return fetchJson<WeeklyPlan>("/plan/revise", {
     method: "POST",
-    body: JSON.stringify({ current_plan: currentPlan, feedback }),
+    body: JSON.stringify(req),
   });
 }
 

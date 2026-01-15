@@ -47,7 +47,7 @@ Rules:
 * If a task exists but needs small changes, **edit the existing task** instead of creating a new one.
 * Create a new task only when no existing task fits.
 
-### Task Enumeration Rules (NEW)
+### Task Enumeration Rules
 
 * All tasks MUST be explicitly numbered:
 
@@ -98,7 +98,7 @@ Agent must prefer task modification over task duplication to conserve tokens and
 
 ---
 
-## 6) External Context & Web Retrieval (NEW)
+## 6) External Context & Web Retrieval
 
 If information is required that is **not available via Context7**, the Agent MAY retrieve external context using:
 
@@ -118,10 +118,36 @@ If information is required that is **not available via Context7**, the Agent MAY
 
 ---
 
+## 7) Mandatory Clarification & Question-Asking
+
+If **any part** of the user’s request, instructions, constraints, intent, or expected output is **unclear, ambiguous, underspecified, or open to multiple interpretations**, the Agent **MUST stop and ask clarifying questions before proceeding**.
+
+Rules:
+
+* The Agent MUST ask clarification questions **even if the doubt is small**.
+* The Agent MUST NOT assume intent, defaults, preferences, or constraints.
+* The Agent MUST NOT “fill gaps” based on prior experience or guesswork.
+* If multiple reasonable interpretations exist, the Agent MUST list them and ask which one to follow.
+* If the Agent is unsure whether clarification is needed, it MUST ask anyway.
+
+This applies to:
+
+* Prompts that are partially specified
+* Requests with missing constraints
+* Conflicting instructions
+* Unclear success criteria
+* Ambiguous terminology or scope
+
+Proceeding without clarification when uncertainty exists is considered a **rule violation**.
+
+---
+
 ### Core Principle
 
 Unplanned work is a bug. Documentation-less assumptions are debt. Context-free code is a liability.
 
 ---
 
-If you need any contexto go to the /context folder or ask me.
+If you need any contexto go to the `/context` folder or ask me.
+
+---

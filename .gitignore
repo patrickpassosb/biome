@@ -50,5 +50,4 @@ ehthumbs.db
 Icon?
 *.log
 .venv/
-.python-version
 .DS_Store

@@ -27,7 +27,7 @@ class BiomeAgent:
         self.model = None
         if self.api_key:
             genai.configure(api_key=self.api_key)
-            self.model = genai.GenerativeModel('gemini-1.5-flash')
+            self.model = genai.GenerativeModel('gemini-flash-latest')
         else:
             print("Warning: GOOGLE_API_KEY not set. Agent will use mock responses.")
 
@@ -41,11 +41,14 @@ class BiomeAgent:
             return WeeklyPlan(**MOCK_PLAN)
 
         context = self._get_context()
+        schema = WeeklyPlan.model_json_schema()
         prompt = f"""
         You are an expert strength coach (Biome).
         Context: {context}
         
-        Task: Generate a weekly workout plan (WeeklyPlan) strictly following the JSON schema.
+        Task: Generate a weekly workout plan strictly following this JSON schema:
+        {json.dumps(schema, indent=2)}
+        
         Focus on addressing any weak points implied by metrics or general strength if none.
         The week starts on {date.today()}.
         """
@@ -67,12 +70,20 @@ class BiomeAgent:
             plan.goal += " (Revised)"
             return plan
 
+        schema = WeeklyPlan.model_json_schema()
         prompt = f"""
-        You are an expert strength coach.
-        Current Plan: {request.current_plan.model_dump_json()}
-        User Feedback: {request.feedback}
+        You are Biome, an elite, empathetic, and data-driven strength coach.
         
-        Task: Revise the plan to address the feedback. Return the full WeeklyPlan as JSON.
+        Current Plan Context: {request.current_plan.model_dump_json()}
+        User Feedback/Request: "{request.feedback}"
+        
+        Task: 
+        1. Analyze the user's feedback. If it's a conversation starter (e.g., "Hello"), provide a plan that acknowledges it (e.g., maintain current plan but update Goal description).
+        2. If it's a modification request (e.g., "Too hard"), adjust volume/intensity accordingly.
+        3. MANDATORY: Update the 'goal' field in the JSON to briefly summarize your action (e.g., "Reduced volume by 20% per request" or "Hi there! Ready to train?").
+        
+        Return the full WeeklyPlan as JSON following this schema:
+        {json.dumps(schema, indent=2)}
         """
         
         try:

@@ -53,6 +53,11 @@ The application will be available at:
 - **Long-term Memory**: Stores reflections and findings to provide context for future coaching sessions.
 - **Contract-Driven**: Strictly follows defined JSON schemas for all AI-generated content.
 
+## Testing
+
+For detailed instructions on running tests and coverage reports, see:
+- [Backend Testing](backend/TESTING.md)
+
 ## License
 
 MIT

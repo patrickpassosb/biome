@@ -20,13 +20,13 @@ export type WeeklyPlan = {
   goal: string;
   workouts: Array<{
     day:
-      | "Monday"
-      | "Tuesday"
-      | "Wednesday"
-      | "Thursday"
-      | "Friday"
-      | "Saturday"
-      | "Sunday";
+    | "Monday"
+    | "Tuesday"
+    | "Wednesday"
+    | "Thursday"
+    | "Friday"
+    | "Saturday"
+    | "Sunday";
     focus: string;
     exercises: Array<{
       name: string;
@@ -40,20 +40,20 @@ export type WeeklyPlan = {
 
 export type CoachFinding = {
   type:
-    | "weak_point"
-    | "progress"
-    | "consistency"
-    | "volume_alert"
-    | "technique_note";
+  | "weak_point"
+  | "progress"
+  | "consistency"
+  | "volume_alert"
+  | "technique_note";
   message: string;
   severity: "info" | "warning" | "critical";
   related_metric?:
-    | "volume_load"
-    | "average_rpe"
-    | "max_weight"
-    | "weekly_frequency"
-    | "set_count"
-    | "failure_rate";
+  | "volume_load"
+  | "average_rpe"
+  | "max_weight"
+  | "weekly_frequency"
+  | "set_count"
+  | "failure_rate";
   related_exercise?: string;
 };
 
@@ -63,4 +63,9 @@ export type MemoryRecord = {
   type: "plan_snapshot" | "finding_snapshot" | "user_feedback" | "reflection";
   content: Record<string, unknown>;
   tags?: string[];
+};
+
+export type RevisePlanRequest = {
+  current_plan: WeeklyPlan;
+  feedback: string;
 };

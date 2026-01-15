@@ -1,28 +1,58 @@
 @import "tailwindcss";
-/* Tailwind global styling entrypoint per Context7: https://context7.com/tailwindlabs/tailwindcss.com/llms.txt */
 
 :root {
-  --background: #0b0e16;
-  --foreground: #f6f1e8;
-  --panel: #141a24;
-  --panel-strong: #1b2232;
-  --panel-border: rgba(120, 140, 170, 0.24);
-  --muted: rgba(246, 241, 232, 0.7);
-  --accent: #f6b26b;
-  --accent-strong: #ff8b5e;
-  --accent-secondary: #5fd3c3;
-  --glow: rgba(255, 139, 94, 0.16);
+  /* Premium Black Theme - HSL Component Values */
+
+  /* Background: Pure Black */
+  --background-h: 0;
+  --background-s: 0%;
+  --background-l: 0%;
+
+  /* Foreground: Pure White */
+  --foreground-h: 0;
+  --foreground-s: 0%;
+  --foreground-l: 100%;
+
+  /* Accent: Subtle Dark Gray / White Glow */
+  --accent-h: 0;
+  --accent-s: 0%;
+  --accent-l: 20%;
+
+  /* Derived Colors */
+  --background: hsl(var(--background-h), var(--background-s), var(--background-l));
+  --foreground: hsl(var(--foreground-h), var(--foreground-s), var(--foreground-l));
+
+  /* Glassmorphism Layers (Grayscale) */
+  --glass-border: rgba(255, 255, 255, 0.15);
+  /* Slightly brighter border for contrast against black */
+  --glass-surface: rgba(20, 20, 20, 0.6);
+  /* Darker, more opaque surface */
+  --glass-highlight: rgba(255, 255, 255, 0.1);
+
+  /* Status Colors (Vibrant but not pastel) */
+  --success: #10b981;
+  --warning: #f59e0b;
+  --error: #ef4444;
+  --info: #3b82f6;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-space-grotesk);
-  --font-display: var(--font-fraunces);
+  --color-surface: var(--glass-surface);
+  --color-border: var(--glass-border);
+  --color-highlight: var(--glass-highlight);
+  --color-accent: hsl(var(--accent-h), var(--accent-s), var(--accent-l));
+
+  --font-sans: var(--font-inter);
 }
 
 body {
-  background: var(--background);
+  background-color: #000000;
+  /* Subtle, almost invisible gradient for depth, strictly grayscale/black */
+  background-image:
+    radial-gradient(circle at 50% 0%, #1a1a1a 0%, transparent 60%);
   color: var(--foreground);
   font-family: var(--font-sans);
+  min-height: 100vh;
 }
