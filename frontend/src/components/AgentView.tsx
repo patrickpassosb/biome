@@ -1,27 +1,25 @@
 import { useState, useEffect, useRef } from "react";
 import { Send, Sparkles, User, Bot, Loader2 } from "lucide-react";
-import { RevisePlanRequest, WeeklyPlan } from "@/lib/api";
+import ReactMarkdown from "react-markdown";
+import { ChatRequest, ChatResponse, WeeklyPlan } from "@/lib/api";
+
+export interface Message {
+    role: 'user' | 'assistant';
+    content: string;
+    timestamp: Date;
+    agentPersona?: string;
+    proposedPlan?: WeeklyPlan;
+}
 
 interface AgentViewProps {
     currentPlan: WeeklyPlan | null;
     onPlanUpdate: (plan: WeeklyPlan) => void;
-    revisePlan: (req: RevisePlanRequest) => Promise<WeeklyPlan>;
+    chatWithAgent: (req: ChatRequest) => Promise<ChatResponse>;
+    messages: Message[];
+    setMessages: (msgs: Message[] | ((prev: Message[]) => Message[])) => void;
 }
 
-interface Message {
-    role: 'user' | 'assistant';
-    content: string;
-    timestamp: Date;
-}
-
-export function AgentView({ currentPlan, onPlanUpdate, revisePlan }: AgentViewProps) {
-    const [messages, setMessages] = useState<Message[]>([
-        {
-            role: 'assistant',
-            content: "Hello! I'm Biome, your training intelligence. I have your latest data and weekly plan ready. How can I help you adjust your training today?",
-            timestamp: new Date()
-        }
-    ]);
+export function AgentView({ currentPlan, onPlanUpdate, chatWithAgent, messages, setMessages }: AgentViewProps) {
     const [input, setInput] = useState("");
     const [isTyping, setIsTyping] = useState(false);
     const scrollRef = useRef<HTMLDivElement>(null);
@@ -41,35 +39,53 @@ export function AgentView({ currentPlan, onPlanUpdate, revisePlan }: AgentViewPr
         setIsTyping(true);
 
         try {
-            // We use the 'revisePlan' API as our conversation driver for now
-            const revisedPlan = await revisePlan({
-                current_plan: currentPlan,
-                feedback: input
+            // Map our messages to the API format
+            const chatMessages = messages.map(m => ({
+                role: m.role,
+                content: m.content,
+                timestamp: m.timestamp.toISOString(),
+                agent_persona: m.agentPersona
+            }));
+            chatMessages.push({
+                role: 'user',
+                content: input,
+                timestamp: new Date().toISOString(),
+                agent_persona: undefined
             });
 
-            onPlanUpdate(revisedPlan);
-
-            // Extract the agent's response from the Goal (as per our earlier prompt engineering)
-            // or fall back to a generic success message if the goal didn't change much.
-            const agentResponseContent = revisedPlan.goal.includes('(')
-                ? revisedPlan.goal
-                : `I've updated your plan. The new goal is: ${revisedPlan.goal}. Check the Dashboard to see the changes.`;
+            const response = await chatWithAgent({
+                messages: chatMessages,
+                current_plan: currentPlan
+            });
 
             const agentMsg: Message = {
                 role: 'assistant',
-                content: agentResponseContent,
-                timestamp: new Date()
+                content: response.message,
+                timestamp: new Date(),
+                agentPersona: response.agent_persona,
+                proposedPlan: response.proposed_plan
             };
             setMessages(prev => [...prev, agentMsg]);
-        } catch (error) {
+        } catch {
             setMessages(prev => [...prev, {
                 role: 'assistant',
-                content: "I'm having trouble connecting to my core logic right now. Please try again.",
-                timestamp: new Date()
+                content: "The team is momentarily unavailable. Let me check the logs and I'll be right back.",
+                timestamp: new Date(),
+                agentPersona: "System"
             }]);
         } finally {
             setIsTyping(false);
         }
+    };
+
+    const handleApprovePlan = (plan: WeeklyPlan) => {
+        onPlanUpdate(plan);
+        setMessages(prev => [...prev, {
+            role: 'assistant',
+            content: "Excellent! I've updated your main training plan. You can see the new structure on your Dashboard.",
+            timestamp: new Date(),
+            agentPersona: "Workout Specialist"
+        }]);
     };
 
     return (
@@ -80,8 +96,8 @@ export function AgentView({ currentPlan, onPlanUpdate, revisePlan }: AgentViewPr
                     <Sparkles className="w-6 h-6" />
                 </div>
                 <div>
-                    <h2 className="text-xl font-bold text-white">Biome Agent</h2>
-                    <p className="text-sm text-[color:var(--muted-foreground)]">Connected • Context Active</p>
+                    <h2 className="text-xl font-bold text-white">Biome Team</h2>
+                    <p className="text-sm text-[color:var(--muted-foreground)]">Workout • Nutrition • Sleep Recovery</p>
                 </div>
             </div>
 
@@ -96,10 +112,47 @@ export function AgentView({ currentPlan, onPlanUpdate, revisePlan }: AgentViewPr
                         )}
 
                         <div className={`max-w-[80%] p-4 rounded-2xl ${msg.role === 'user'
-                                ? 'bg-white text-black rounded-tr-none'
-                                : 'bg-[color:var(--card)] border border-[color:var(--glass-border)] text-[color:var(--foreground)] rounded-tl-none'
+                            ? 'bg-white text-black rounded-tr-none'
+                            : 'bg-[color:var(--card)] border border-[color:var(--glass-border)] text-[color:var(--foreground)] rounded-tl-none'
                             }`}>
-                            <p className="whitespace-pre-wrap">{msg.content}</p>
+                            {msg.agentPersona && (
+                                <div className="flex items-center gap-2 mb-2">
+                                    <span className="text-[10px] font-bold uppercase tracking-widest text-white/40">
+                                        {msg.agentPersona}
+                                    </span>
+                                </div>
+                            )}
+                            <div className="prose prose-invert max-w-none text-sm leading-relaxed">
+                                <ReactMarkdown
+                                    components={{
+                                        strong: ({ ...props }) => <strong className="font-bold text-white shadow-[0_0_10px_rgba(255,255,255,0.2)]" {...props} />,
+                                        p: ({ ...props }) => <p className="mb-3 last:mb-0" {...props} />,
+                                        ul: ({ ...props }) => <ul className="list-disc ml-4 mb-3 space-y-1" {...props} />,
+                                        li: ({ ...props }) => <li className="text-[color:var(--foreground)]" {...props} />,
+                                        h1: ({ ...props }) => <h1 className="text-lg font-bold mb-2 mt-4 first:mt-0" {...props} />,
+                                        h2: ({ ...props }) => <h2 className="text-md font-bold mb-2 mt-4 first:mt-0" {...props} />,
+                                    }}
+                                >
+                                    {msg.content}
+                                </ReactMarkdown>
+                            </div>
+
+                            {msg.proposedPlan && (
+                                <div className="mt-4 p-4 rounded-xl bg-white/5 border border-white/10 animate-in slide-in-from-bottom-2">
+                                    <div className="flex items-center justify-between mb-3">
+                                        <span className="text-xs font-medium text-white/60">Suggested Plan Update</span>
+                                        <Sparkles className="w-4 h-4 text-white/40" />
+                                    </div>
+                                    <p className="text-sm font-medium text-white mb-3">Goal: {msg.proposedPlan.goal}</p>
+                                    <button
+                                        onClick={() => handleApprovePlan(msg.proposedPlan!)}
+                                        className="w-full py-2 bg-white text-black text-sm font-bold rounded-lg hover:bg-white/90 transition-colors"
+                                    >
+                                        Approve & Update Plan
+                                    </button>
+                                </div>
+                            )}
+
                             <p className="text-[10px] opacity-50 mt-2 text-right">
                                 {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                             </p>

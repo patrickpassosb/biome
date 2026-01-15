@@ -1,4 +1,3 @@
-import pytest
 from models import WeeklyPlan, PlanValidationResult
 from datetime import date
 

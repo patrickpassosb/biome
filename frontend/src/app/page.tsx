@@ -6,13 +6,20 @@ import {
   getOverviewMetrics,
   getTrend,
   proposeWeeklyPlan,
-  reviseWeeklyPlan,
+  chatWithAgent,
 } from "@/lib/api";
 import { Sidebar } from "@/components/Sidebar";
 import { DashboardView } from "@/components/DashboardView";
-import { AgentView } from "@/components/AgentView";
+import { AgentView, type Message } from "@/components/AgentView";
 import { SettingsView } from "@/components/SettingsView";
 import type { WeeklyPlan } from "@/lib/api";
+
+// Header shared across views (minimal)
+const Header = () => (
+  <header className="mb-10">
+    <h2 className="text-4xl font-bold tracking-tighter text-white">Biome</h2>
+  </header>
+);
 
 export default function App() {
   const [currentView, setCurrentView] = useState<'dashboard' | 'agent' | 'settings'>('dashboard');
@@ -32,15 +39,18 @@ export default function App() {
   // Local state for the plan if modified by the agent
   const [localPlan, setLocalPlan] = useState<WeeklyPlan | null>(null);
 
+  // Persist messages across view changes
+  const [messages, setMessages] = useState<Message[]>([
+    {
+      role: 'assistant',
+      content: "Hello! We are the Biome Team—your specialized coaches for workout, nutrition, and recovery. We've analyzed your latest gym data and trends. How can we help you reach your goals today?",
+      timestamp: new Date(),
+      agentPersona: "Biome Team"
+    }
+  ]);
+
   // Derive final plan (use local if available, otherwise fetched)
   const currentPlan = localPlan ?? planState.data;
-
-  // Header shared across views (minimal)
-  const Header = () => (
-    <header className="mb-10">
-      <h2 className="text-4xl font-bold tracking-tighter text-white">Biome</h2>
-    </header>
-  );
 
   return (
     <div className="flex h-screen bg-black text-white selection:bg-white selection:text-black">
@@ -66,7 +76,9 @@ export default function App() {
             <AgentView
               currentPlan={currentPlan}
               onPlanUpdate={setLocalPlan}
-              revisePlan={reviseWeeklyPlan}
+              chatWithAgent={chatWithAgent}
+              messages={messages}
+              setMessages={setMessages}
             />
           )}
 

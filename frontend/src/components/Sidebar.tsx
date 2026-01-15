@@ -8,7 +8,7 @@ interface SidebarProps {
 export function Sidebar({ currentView, onViewChange }: SidebarProps) {
     const menuItems = [
         { id: 'dashboard', label: 'Dashboard', icon: LayoutGrid },
-        { id: 'agent', label: 'Agent', icon: Sparkles },
+        { id: 'agent', label: 'Agents', icon: Sparkles },
         { id: 'settings', label: 'Settings', icon: Settings },
     ] as const;
 
@@ -28,8 +28,8 @@ export function Sidebar({ currentView, onViewChange }: SidebarProps) {
                             key={item.id}
                             onClick={() => onViewChange(item.id)}
                             className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group ${isActive
-                                    ? "bg-white text-black font-medium shadow-lg shadow-white/10"
-                                    : "text-[color:var(--muted-foreground)] hover:bg-[color:var(--glass-surface)] hover:text-white"
+                                ? "bg-white text-black font-medium shadow-lg shadow-white/10"
+                                : "text-[color:var(--muted-foreground)] hover:bg-[color:var(--glass-surface)] hover:text-white"
                                 }`}
                         >
                             <Icon className={`w-5 h-5 ${isActive ? "text-black" : "group-hover:text-white"}`} />

@@ -15,6 +15,10 @@ const nextConfig: NextConfig = {
         source: "/memory/:path*",
         destination: `${process.env.BACKEND_INTERNAL_URL || "http://backend:8080"}/memory/:path*`,
       },
+      {
+        source: "/agent/:path*",
+        destination: `${process.env.BACKEND_INTERNAL_URL || "http://backend:8080"}/agent/:path*`,
+      },
     ];
   },
 };

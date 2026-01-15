@@ -21,7 +21,6 @@ export function useAsyncData<T>(
   useEffect(() => {
     let active = true;
 
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setState((current) => ({
       ...current,
       loading: true,

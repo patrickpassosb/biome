@@ -1,6 +1,5 @@
-import pytest
 from unittest.mock import MagicMock
-from models import WeeklyPlan, RevisePlanRequest, PlanValidationResult
+from models import WeeklyPlan, ChatRequest, ChatMessage
 from datetime import date
 import json
 
@@ -35,25 +34,30 @@ def test_propose_plan_failure_fallback(test_agent):
     assert isinstance(plan, WeeklyPlan)
     assert "(Mock)" in plan.goal  # Should fall back to MOCK_PLAN
 
-def test_revise_plan(test_agent):
+def test_chat(test_agent):
     # Arrange
     current_plan = WeeklyPlan(week_start_date=str(date.today()), goal="Old Goal", workouts=[])
-    request = RevisePlanRequest(current_plan=current_plan, feedback="Make it harder")
+    request = ChatRequest(
+        messages=[ChatMessage(role="user", content="How are my rows?")],
+        current_plan=current_plan
+    )
     
-    revised_plan_dict = {
-        "week_start_date": str(date.today()),
-        "goal": "Revised Goal",
-        "workouts": []
+    chat_response_dict = {
+        "message": "Your rows are progressing well!",
+        "proposed_plan": None,
+        "agent_persona": "Workout Specialist"
     }
     mock_response = MagicMock()
-    mock_response.text = json.dumps(revised_plan_dict)
+    mock_response.text = json.dumps(chat_response_dict)
     test_agent.model.generate_content.return_value = mock_response
 
     # Act
-    result = test_agent.revise_plan(request)
+    result = test_agent.chat(request)
 
     # Assert
-    assert result.goal == "Revised Goal"
+    assert result.message == "Your rows are progressing well!"
+    assert result.agent_persona == "Workout Specialist"
+    assert result.proposed_plan is None
 
 def test_validate_plan(test_agent):
     # Arrange
@@ -72,10 +76,10 @@ def test_validate_plan(test_agent):
     assert "Too much volume" in result.issues
 
 def test_agent_initialization_without_key():
-    from agent.core import BiomeAgent
+    from agent.core import BiomeTeam
     import os
     from unittest.mock import patch
     
     with patch.dict(os.environ, {}, clear=True):
-        agent = BiomeAgent()
+        agent = BiomeTeam()
         assert agent.model is None

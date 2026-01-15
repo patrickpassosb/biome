@@ -122,5 +122,86 @@ class AnalyticsEngine:
         results = self.con.execute(query).fetchall()
         return [TrendPoint(date=r[0], value=float(r[1])) for r in results]
 
+    def get_recent_history(self, limit: int = 50) -> List[Dict[str, Any]]:
+        query = """
+            SELECT date, workout, exercise, set_number, reps, weight_kg, rpe, notes
+            FROM training_history
+            ORDER BY date DESC
+            LIMIT ?
+        """
+        results = self.con.execute(query, [limit]).fetchall()
+        
+        return [
+            {
+                "date": str(r[0]),
+                "workout": r[1],
+                "exercise": r[2],
+                "set_number": r[3],
+                "reps": r[4],
+                "weight_kg": r[5],
+                "rpe": r[6],
+                "notes": r[7]
+            }
+            for r in results
+        ]
+
+    def get_progression_analysis(self) -> Dict[str, Any]:
+        """Analyzes progression trends for the entire dataset."""
+        # Top 5 improved exercises (weight gain)
+        progression_query = """
+            WITH exercise_bounds AS (
+                SELECT 
+                    exercise, 
+                    MIN(date) as first_date, 
+                    MAX(date) as last_date
+                FROM training_history
+                WHERE weight_kg IS NOT NULL
+                GROUP BY exercise
+            ),
+            first_weights AS (
+                SELECT t.exercise, AVG(t.weight_kg) as start_weight
+                FROM training_history t
+                JOIN exercise_bounds e ON t.exercise = e.exercise AND t.date = e.first_date
+                GROUP BY t.exercise
+            ),
+            last_weights AS (
+                SELECT t.exercise, AVG(t.weight_kg) as end_weight
+                FROM training_history t
+                JOIN exercise_bounds e ON t.exercise = e.exercise AND t.date = e.last_date
+                GROUP BY t.exercise
+            )
+            SELECT 
+                f.exercise, 
+                f.start_weight, 
+                l.end_weight, 
+                (l.end_weight - f.start_weight) as weight_diff
+            FROM first_weights f
+            JOIN last_weights l ON f.exercise = l.exercise
+            WHERE weight_diff != 0
+            ORDER BY weight_diff DESC
+        """
+        progression = self.con.execute(progression_query).fetchall()
+        
+        # Recent workout summaries (last 5 workouts)
+        summary_query = """
+            SELECT date, workout, COUNT(*) as sets, SUM(weight_kg * reps) as volume
+            FROM training_history
+            GROUP BY date, workout
+            ORDER BY date DESC
+            LIMIT 5
+        """
+        summaries = self.con.execute(summary_query).fetchall()
+
+        return {
+            "top_progressions": [
+                {"exercise": r[0], "start_weight": r[1], "end_weight": r[2], "diff": r[3]}
+                for r in progression[:5]
+            ],
+            "recent_workout_summaries": [
+                {"date": str(r[0]), "workout": r[1], "sets": r[2], "volume": r[3]}
+                for r in summaries
+            ]
+        }
+
 # Singleton instance
 analytics = AnalyticsEngine()

@@ -69,3 +69,21 @@ export type RevisePlanRequest = {
   current_plan: WeeklyPlan;
   feedback: string;
 };
+
+export type ChatMessage = {
+  role: "user" | "assistant";
+  content: string;
+  timestamp: string;
+  agent_persona?: string;
+};
+
+export type ChatRequest = {
+  messages: ChatMessage[];
+  current_plan: WeeklyPlan;
+};
+
+export type ChatResponse = {
+  message: string;
+  proposed_plan?: WeeklyPlan;
+  agent_persona: string;
+};

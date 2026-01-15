@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from routers import metrics, plan, memory
+from routers import metrics, plan, memory, agent as agent_router
 import uvicorn
 
 app = FastAPI(
@@ -20,6 +20,7 @@ app.add_middleware(
 app.include_router(metrics.router)
 app.include_router(plan.router)
 app.include_router(memory.router)
+app.include_router(agent_router.router)
 
 @app.get("/")
 async def root():

@@ -1,5 +1,4 @@
 "use client";
-import { useMemo } from "react";
 import {
     CartesianGrid,
     Line,
@@ -14,12 +13,11 @@ import {
     Activity,
     BarChart2,
     Calendar,
-    Dumbbell,
     History,
     TrendingUp,
     ClipboardList
 } from "lucide-react";
-import type { WeeklyPlan } from "@/lib/api";
+import type { WeeklyPlan, OverviewMetrics, TrendPoint, MemoryRecord } from "@/lib/api";
 
 /** UTILS */
 function formatNumber(value: number | undefined, suffix?: string) {
@@ -95,10 +93,10 @@ function StatCard({ label, value, subvalue, trend }: { label: string; value: str
 }
 
 interface DashboardViewProps {
-    overview: any;
-    trends: any;
+    overview: OverviewMetrics | null;
+    trends: { volume: TrendPoint[]; frequency: TrendPoint[] } | null;
     plan: WeeklyPlan | null;
-    memory: any[];
+    memory: MemoryRecord[];
     loading: boolean;
 }
 
@@ -157,8 +155,10 @@ export function DashboardView({ overview, trends, plan, memory, loading }: Dashb
                                 <div className="mt-1 h-1.5 w-1.5 rounded-full bg-white/20 shrink-0" />
                                 <div>
                                     <p className="text-white/80 line-clamp-2">
-                                        {m.type === 'workout_log' ? 'Training session logged' :
-                                            m.type === 'finding_snapshot' ? 'Coach insight generated' : 'Memory checkpoint'}
+                                        {m.type === 'plan_snapshot' ? 'Weekly plan updated' :
+                                            m.type === 'finding_snapshot' ? 'Coach insight generated' :
+                                                m.type === 'user_feedback' ? 'User feedback recorded' :
+                                                    m.type === 'reflection' ? 'Agent reflection generated' : 'Memory checkpoint'}
                                     </p>
                                     <p className="text-[10px] text-white/30">{formatTime(m.created_at)}</p>
                                 </div>

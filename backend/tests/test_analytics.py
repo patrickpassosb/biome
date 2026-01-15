@@ -1,6 +1,4 @@
-import pytest
-from datetime import date, timedelta
-from analytics.db import AnalyticsEngine
+from datetime import date
 
 def test_analytics_init(in_memory_db):
     # in_memory_db is an instance of AnalyticsEngine using :memory:

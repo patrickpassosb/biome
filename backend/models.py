@@ -29,6 +29,23 @@ class RevisePlanRequest(BaseModel):
     current_plan: WeeklyPlan
     feedback: str
 
+# --- Chat & Multi-Agent Models ---
+
+class ChatMessage(BaseModel):
+    role: Literal["user", "assistant"]
+    content: str
+    timestamp: datetime = datetime.now()
+    agent_persona: Optional[str] = None # e.g., "Workout Specialist", "Nutrition Guru"
+
+class ChatRequest(BaseModel):
+    messages: List[ChatMessage]
+    current_plan: WeeklyPlan
+
+class ChatResponse(BaseModel):
+    message: str
+    proposed_plan: Optional[WeeklyPlan] = None
+    agent_persona: str
+
 # --- Coach Findings Models ---
 
 class Finding(BaseModel):

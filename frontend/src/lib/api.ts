@@ -5,6 +5,8 @@ import type {
   TrendPoint,
   WeeklyPlan,
   RevisePlanRequest,
+  ChatRequest,
+  ChatResponse,
 } from "./types";
 
 export type {
@@ -14,6 +16,8 @@ export type {
   TrendPoint,
   WeeklyPlan,
   RevisePlanRequest,
+  ChatRequest,
+  ChatResponse,
 };
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
@@ -72,5 +76,12 @@ export function searchMemoryRecords(body: {
   return fetchJson<MemoryRecord[]>("/memory/search", {
     method: "POST",
     body: JSON.stringify(body),
+  });
+}
+
+export function chatWithAgent(req: ChatRequest) {
+  return fetchJson<ChatResponse>("/agent/chat", {
+    method: "POST",
+    body: JSON.stringify(req),
   });
 }

@@ -29,15 +29,22 @@ def mock_analytics():
             "total_volume_load_current_week": 10000,
             "active_weak_points_count": 0
         }
+        mock.get_recent_history.return_value = [
+            {"date": "2023-01-01", "workout": "Test", "exercise": "Bench", "set_number": 1, "reps": 10, "weight_kg": 100, "rpe": 8, "notes": "Feeling good"}
+        ]
+        mock.get_progression_analysis.return_value = {
+            "top_progressions": [],
+            "recent_workout_summaries": []
+        }
         yield mock
 
 @pytest.fixture
 def test_agent(mock_genai, mock_analytics):
     """Returns an agent instance with mocked dependencies"""
-    from agent.core import BiomeAgent
+    from agent.core import BiomeTeam
     # Force API key presence to trigger model init
     with patch.dict(os.environ, {"GOOGLE_API_KEY": "fake-key"}):
-        agent = BiomeAgent()
+        agent = BiomeTeam()
         return agent
 
 @pytest.fixture
