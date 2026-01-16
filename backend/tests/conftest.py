@@ -20,3 +20,8 @@ def client():
 def mock_firestore():
     with patch("google.cloud.firestore.Client") as mock:
         yield mock
+
+@pytest.fixture
+def mock_adk_run():
+    with patch("google.adk.runners.Runner.run") as mock:
+        yield mock
