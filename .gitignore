@@ -51,3 +51,6 @@ Icon?
 *.log
 .venv/
 .DS_Store
+
+.gemini/
+gha-creds-*.json
