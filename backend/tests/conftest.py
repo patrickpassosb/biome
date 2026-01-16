@@ -66,10 +66,13 @@ def in_memory_db():
         # We need to re-instantiate the singleton for the test context
         engine = AnalyticsEngine()
         # Seed it with some data for testing
-        engine.con.execute("INSERT INTO training_history (date, workout, exercise, reps, weight_kg) VALUES ('2023-01-01', 'Test Workout', 'Bench', 10, 100)")
+        engine.con.execute("INSERT INTO training_history (date, workout, exercise, reps, weight_kg, rpe) VALUES ('2023-01-01', 'Test Workout', 'Bench', 10, 100, 8)")
         
-        # Patch the global 'analytics' instance in the module
-        with patch("analytics.db.analytics", engine):
+        # Patch the global 'analytics' instance in all locations it might be imported
+        with patch("analytics.db.analytics", engine), \
+             patch("routers.metrics.analytics", engine, create=True), \
+             patch("routers.data.analytics", engine, create=True), \
+             patch("agent.core.analytics", engine, create=True):
             yield engine
 
 @pytest.fixture

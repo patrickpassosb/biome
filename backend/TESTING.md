@@ -1,38 +1,69 @@
-# Testing Biome Backend
+# Testing Biome
 
-This project uses `pytest` for testing, with `pytest-cov` for coverage reporting.
+This repository contains a full suite of tests for both the backend (Python) and frontend (Next.js).
 
-## Prerequisites
+## Backend Testing (Python)
 
+Uses `pytest` and `pytest-cov`.
+
+### Prerequisites
 - Python 3.12+
 - `uv` installed
 
-## Running Tests
-
-### All Tests
+### Run Tests
 ```bash
+cd backend
 uv run pytest
 ```
 
-### With Coverage Report
+### Coverage Report
 ```bash
+cd backend
 uv run pytest --cov=. --cov-report=term-missing
 ```
+*Note: CI enforces a minimum of 80% coverage for the backend.*
 
-### Specific Test File
+---
+
+## Frontend Testing (Next.js)
+
+Uses `Vitest` for unit/component tests and `Playwright` for E2E tests.
+
+### Prerequisites
+- Node.js 20+
+- `npm` installed
+
+### Unit & Component Tests
 ```bash
-uv run pytest tests/test_agent.py
+cd frontend
+npm test
 ```
 
-## Test Structure
+### Frontend Coverage
+```bash
+cd frontend
+npm run test:coverage
+```
 
-- `backend/tests/conftest.py`: Contains global fixtures and mocks (GenAI, Analytics/DuckDB, Firestore).
-- `backend/tests/test_agent.py`: Unit tests for the Biome AI Agent.
-- `backend/tests/test_analytics.py`: Tests for the DuckDB analytics engine.
-- `backend/tests/test_memory.py`: Tests for the Memory Store (in-memory fallback).
-- `backend/tests/test_router_plan.py`: API tests for the plan generation endpoints.
-- `backend/tests/test_main.py`: Integration/smoke tests for the entire API.
+### E2E / Smoke Tests
+```bash
+cd frontend
+npx playwright install # First time only
+npm run test:e2e
+```
 
-## CI/CD
+---
 
-Tests are automatically run on every push and pull request to the `main` branch via GitHub Actions. The CI enforces a minimum coverage threshold of 70%.
+## CI/CD Integration
+
+Tests are automatically executed on every push and pull request to the `main` branch via GitHub Actions (`.github/workflows/ci.yml`).
+
+### Backend Pipeline
+- Linting and Formatting (Ruff)
+- Unit & Integration Tests (Pytest)
+- Coverage Enforcement (80%)
+
+### Frontend Pipeline
+- Linting (ESLint)
+- Unit & Component Tests (Vitest)
+- Production Build Check

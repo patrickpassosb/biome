@@ -7,6 +7,9 @@ import type {
   RevisePlanRequest,
   ChatRequest,
   ChatResponse,
+  ExerciseStats,
+  WorkoutInsight,
+  WorkoutLogEntry,
 } from "./types";
 
 export type {
@@ -18,6 +21,9 @@ export type {
   RevisePlanRequest,
   ChatRequest,
   ChatResponse,
+  WorkoutInsight,
+  ExerciseStats,
+  WorkoutLogEntry,
 };
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
@@ -43,10 +49,24 @@ export function getOverviewMetrics() {
   return fetchJson<OverviewMetrics>("/metrics/overview");
 }
 
-export function getTrend(metric: TrendMetric) {
-  return fetchJson<TrendPoint[]>(
-    `/metrics/trends?metric=${encodeURIComponent(metric)}`,
-  );
+export function getTrend(metric: TrendMetric, exercise?: string) {
+  const params = new URLSearchParams({ metric });
+  if (exercise) params.append("exercise", exercise);
+  return fetchJson<TrendPoint[]>(`/metrics/trends?${params.toString()}`);
+}
+
+export function getExercises() {
+  return fetchJson<string[]>("/metrics/exercises");
+}
+
+export function getExerciseStats(exercise: string) {
+  return fetchJson<ExerciseStats>(`/metrics/exercise-stats/${encodeURIComponent(exercise)}`);
+}
+
+export function getInsights(exercise?: string) {
+  const params = new URLSearchParams();
+  if (exercise) params.append("exercise", exercise);
+  return fetchJson<WorkoutInsight[]>(`/metrics/insights?${params.toString()}`);
 }
 
 export function proposeWeeklyPlan() {
@@ -83,5 +103,36 @@ export function chatWithAgent(req: ChatRequest) {
   return fetchJson<ChatResponse>("/agent/chat", {
     method: "POST",
     body: JSON.stringify(req),
+  });
+}
+
+export function toggleDemoMode(enabled: boolean) {
+  return fetchJson<{ status: string; mode: string }>("/data/demo", {
+    method: "POST",
+    body: JSON.stringify({ enabled }),
+  });
+}
+
+export function importUserData(file: File) {
+  const formData = new FormData();
+  formData.append("file", file);
+  
+  // Custom fetch because fetchJson assumes JSON body/headers
+  return fetch(`${API_BASE_URL}/data/import`, {
+    method: "POST",
+    body: formData,
+  }).then(async (res) => {
+    if (!res.ok) {
+        const txt = await res.text();
+        throw new Error(txt || "Import failed");
+    }
+    return res.json();
+  });
+}
+
+export function logWorkout(entry: WorkoutLogEntry) {
+  return fetchJson<{ status: string }>("/data/log", {
+    method: "POST",
+    body: JSON.stringify(entry),
   });
 }

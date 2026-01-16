@@ -82,6 +82,7 @@ class MetricsOverview(BaseModel):
     weekly_frequency: int
     total_volume_load_current_week: float
     active_weak_points_count: int
+    is_demo: bool = False
 
 class TrendPoint(BaseModel):
     date: date
@@ -89,3 +90,26 @@ class TrendPoint(BaseModel):
 
 class MetricTrendResponse(BaseModel):
     data: List[TrendPoint]
+
+class ExerciseStats(BaseModel):
+    max_weight: Optional[float] = 0.0
+    max_level: Optional[float] = 0.0
+    average_rpe: Optional[float] = 0.0
+    total_volume: Optional[float] = 0.0
+    total_sets: int
+
+class WorkoutLogEntry(BaseModel):
+    date: date
+    workout: str
+    exercise: str
+    set_number: int
+    reps: int
+    weight_kg: float
+    rpe: Optional[float] = None
+    notes: Optional[str] = None
+
+class WorkoutInsight(BaseModel):
+    type: Literal["info", "warning", "success", "critical"]
+    category: str # "stagnation", "progress", "fatigue", etc.
+    exercise: Optional[str] = None
+    message: str

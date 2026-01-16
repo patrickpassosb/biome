@@ -55,8 +55,8 @@ The application will be available at:
 
 ## Testing
 
-For detailed instructions on running tests and coverage reports, see:
-- [Backend Testing](backend/TESTING.md)
+For detailed instructions on running backend and frontend tests, including coverage reports, see:
+- [Testing Guide](backend/TESTING.md)
 
 ## License
 

@@ -38,7 +38,7 @@ jobs:
 
     - name: Run tests with Pytest and Coverage
       run: |
-        uv run pytest --cov=. --cov-report=xml --cov-fail-under=70
+        uv run pytest --cov=. --cov-report=xml --cov-fail-under=80
 
   frontend-quality:
     runs-on: ubuntu-latest
@@ -57,8 +57,20 @@ jobs:
     - name: Install dependencies
       run: npm install
 
-    - name: Lint
-      run: npm run lint
+        - name: Lint
 
-    - name: Build
-      run: npm run build
+          run: npm run lint
+
+    
+
+        - name: Run tests
+
+          run: npm test
+
+    
+
+        - name: Build
+
+          run: npm run build
+
+    

@@ -3,7 +3,7 @@ import json
 import google.generativeai as genai
 from datetime import date
 
-from models import WeeklyPlan, PlanValidationResult, RevisePlanRequest, ChatMessage, ChatRequest, ChatResponse
+from models import WeeklyPlan, PlanValidationResult, ChatRequest, ChatResponse
 from analytics.db import analytics
 
 # Fallback/Mock data if no API key
@@ -58,6 +58,12 @@ class BiomeTeam:
         2. **Nutrition Guru**: Experts in fueling for performance, recovery, and gene-specific optimization.
         3. **Sleep/Recovery Expert**: Focused on circadian rhythms, HRV, and CNS recovery.
 
+        IMPORTANT: If the 'Context' below shows no training history, the user is NEW. 
+        Your goal is to perform a 'Cold Start Onboarding':
+        - Ask about their training experience, goals (Strength vs Hypertrophy), and availability (days per week).
+        - Once you have enough info, propose their FIRST Weekly Plan.
+        - Be encouraging and helpful.
+
         Context (User Data & Trends):
         {context}
 
@@ -98,22 +104,26 @@ class BiomeTeam:
     def propose_plan(self) -> WeeklyPlan:
         # Re-using the logic but encapsulated in the new BiomeTeam
         # ... (implementation remains similar but internal to BiomeTeam)
-        if not self.model: return WeeklyPlan(**MOCK_PLAN)
+        if not self.model:
+            return WeeklyPlan(**MOCK_PLAN)
         context = self._get_context()
         schema = WeeklyPlan.model_json_schema()
         prompt = f"You are Biome Workout Specialist. Generate a plan. Context: {context}. Schema: {json.dumps(schema)}"
         try:
             response = self.model.generate_content(prompt, generation_config={"response_mime_type": "application/json"})
             return WeeklyPlan.model_validate_json(response.text)
-        except: return WeeklyPlan(**MOCK_PLAN)
+        except Exception:
+            return WeeklyPlan(**MOCK_PLAN)
 
     def validate_plan(self, plan: WeeklyPlan) -> PlanValidationResult:
-        if not self.model: return PlanValidationResult(valid=True, issues=[])
+        if not self.model:
+            return PlanValidationResult(valid=True, issues=[])
         context = self._get_context()
         prompt = f"Validate this plan: {plan.model_dump_json()}. Context: {context}"
         try:
             response = self.model.generate_content(prompt, generation_config={"response_mime_type": "application/json"})
             return PlanValidationResult.model_validate_json(response.text)
-        except: return PlanValidationResult(valid=True, issues=[])
+        except Exception:
+            return PlanValidationResult(valid=True, issues=[])
 
 agent = BiomeTeam()

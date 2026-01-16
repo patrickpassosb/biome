@@ -2,6 +2,7 @@ export type OverviewMetrics = {
   weekly_frequency: number;
   total_volume_load_current_week: number;
   active_weak_points_count: number;
+  is_demo: boolean;
 };
 
 export type TrendMetric =
@@ -86,4 +87,30 @@ export type ChatResponse = {
   message: string;
   proposed_plan?: WeeklyPlan;
   agent_persona: string;
+};
+
+export type ExerciseStats = {
+  max_weight: number;
+  max_level: number;
+  average_rpe: number;
+  total_volume: number;
+  total_sets: number;
+};
+
+export type WorkoutInsight = {
+  type: "info" | "warning" | "success" | "critical";
+  category: string;
+  exercise?: string;
+  message: string;
+};
+
+export type WorkoutLogEntry = {
+  date: string;
+  workout: string;
+  exercise: string;
+  set_number: number;
+  reps: number;
+  weight_kg: number;
+  rpe?: number;
+  notes?: string;
 };
