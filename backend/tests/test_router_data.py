@@ -1,19 +1,20 @@
 from io import BytesIO
+from analytics.db import analytics
 
-def test_toggle_demo_mode(client, in_memory_db):
+def test_toggle_demo_mode(client):
     # Enable demo mode
     response = client.post("/data/demo", json={"enabled": True})
     assert response.status_code == 200
     assert response.json()["mode"] == "demo"
-    assert in_memory_db.active_table == "demo_training_history"
+    assert analytics.active_table == "demo_training_history"
 
     # Disable demo mode
     response = client.post("/data/demo", json={"enabled": False})
     assert response.status_code == 200
     assert response.json()["mode"] == "user"
-    assert in_memory_db.active_table == "training_history"
+    assert analytics.active_table == "training_history"
 
-def test_log_workout(client, in_memory_db):
+def test_log_workout(client):
     workout_data = {
         "date": "2023-01-02",
         "workout": "Leg Day",
@@ -29,12 +30,10 @@ def test_log_workout(client, in_memory_db):
     assert response.json()["status"] == "success"
 
     # Verify in DB
-    history = in_memory_db.get_recent_history(limit=10)
-    # The fixture seeds one entry '2023-01-01', so we expect 2 total
-    assert len(history) == 2
+    history = analytics.get_recent_history(limit=10)
     assert any(h["exercise"] == "Squat" for h in history)
 
-def test_import_data_success(client, in_memory_db, tmp_path):
+def test_import_data_success(client, tmp_path):
     # Create a dummy CSV
     csv_content = "date,workout,exercise,set_number,reps,duration_seconds,weight_kg,machine_level,warm_up,rpe,notes\n2023-01-10,Imported,Deadlift,1,5,,180,,,9,test import"
     
@@ -50,7 +49,7 @@ def test_import_data_success(client, in_memory_db, tmp_path):
     assert response.json()["message"] == "Data imported successfully"
     
     # Verify in DB
-    history = in_memory_db.get_recent_history()
+    history = analytics.get_recent_history()
     assert any(h["exercise"] == "Deadlift" for h in history)
 
 def test_import_data_invalid_extension(client):

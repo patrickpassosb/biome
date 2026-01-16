@@ -4,8 +4,13 @@ from datetime import date, timedelta
 from typing import List, Dict, Any, Optional
 from models import TrendPoint, WorkoutLogEntry
 
-DB_PATH = "data/analytics.duckdb"
-CSV_PATH = "data/gym_data.csv"
+# Use an in-memory database for testing
+if os.environ.get("TESTING") == "true":
+    DB_PATH = ":memory:"
+    CSV_PATH = "data/gym_data.csv" # The test setup can mock this if needed
+else:
+    DB_PATH = "data/analytics.duckdb"
+    CSV_PATH = "data/gym_data.csv"
 
 class AnalyticsEngine:
     def __init__(self):
