@@ -6,7 +6,7 @@ import uvicorn
 app = FastAPI(
     title="Biome Training Intelligence API",
     version="1.0.0",
-    description="API for Training Intelligence Dashboard (Biome)."
+    description="API for Training Intelligence Dashboard (Biome).",
 )
 
 app.add_middleware(
@@ -23,9 +23,11 @@ app.include_router(memory.router)
 app.include_router(agent_router.router)
 app.include_router(data.router)
 
+
 @app.get("/")
 async def root():
     return {"status": "ok", "message": "Biome Backend is running"}
+
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)

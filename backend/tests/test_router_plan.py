@@ -1,48 +1,132 @@
-from models import WeeklyPlan, PlanValidationResult
-from datetime import date
+from unittest.mock import patch, MagicMock, AsyncMock
+import pytest
 
-def test_propose_plan_endpoint(client, mock_agent_instance):
-    # Arrange
-    expected_plan = WeeklyPlan(
-        week_start_date=str(date.today()),
-        goal="API Test Goal",
-        workouts=[]
+
+@pytest.fixture
+def mock_runner():
+    with patch("routers.plan.Runner") as mock:
+        yield mock
+
+
+@pytest.fixture
+def mock_session_service():
+    with patch("routers.plan.InMemorySessionService") as mock:
+        mock_instance = MagicMock()
+        mock_instance.create_session = AsyncMock()
+        mock.return_value = mock_instance
+        yield mock
+
+
+class MockEvent:
+    def __init__(self, is_final=False, text=None):
+        self._is_final = is_final
+        if text:
+            self.content = MagicMock()
+            self.content.parts = [MagicMock(text=text)]
+        else:
+            self.content = None
+
+    def is_final_response(self):
+        return self._is_final
+
+
+def test_propose_plan_success(client, mock_runner, mock_session_service):
+    valid_plan_json = (
+        '{"week_start_date": "2023-01-15", "goal": "Test", "workouts": []}'
     )
-    mock_agent_instance.propose_plan.return_value = expected_plan
+    mock_runner.return_value.run.return_value = [
+        MockEvent(is_final=True, text=valid_plan_json)
+    ]
 
-    # Act
     response = client.post("/plan/propose")
-
-    # Assert
     assert response.status_code == 200
-    assert response.json()["goal"] == "API Test Goal"
-    mock_agent_instance.propose_plan.assert_called_once()
+    data = response.json()
+    assert data["week_start_date"] == "2023-01-15"
+    assert data["goal"] == "Test"
 
-def test_revise_plan_endpoint(client, mock_agent_instance):
-    # Arrange
-    current_plan = WeeklyPlan(week_start_date=str(date.today()), goal="Old", workouts=[])
-    revised_plan = WeeklyPlan(week_start_date=str(date.today()), goal="New", workouts=[])
-    mock_agent_instance.revise_plan.return_value = revised_plan
 
-    # Act
-    response = client.post("/plan/revise", json={
-        "current_plan": current_plan.model_dump(mode='json'),
-        "feedback": "Change it"
-    })
+def test_propose_plan_invalid_json(client, mock_runner, mock_session_service):
+    mock_runner.return_value.run.return_value = [
+        MockEvent(is_final=True, text="not valid json")
+    ]
 
-    # Assert
+    response = client.post("/plan/propose")
     assert response.status_code == 200
-    assert response.json()["goal"] == "New"
+    data = response.json()
+    assert "Error" in data["goal"]
 
-def test_validate_plan_endpoint(client, mock_agent_instance):
-    # Arrange
-    plan = WeeklyPlan(week_start_date=str(date.today()), goal="Test", workouts=[])
-    validation_result = PlanValidationResult(valid=True, issues=[])
-    mock_agent_instance.validate_plan.return_value = validation_result
 
-    # Act
-    response = client.post("/plan/validate", json=plan.model_dump(mode='json'))
+def test_propose_plan_no_response(client, mock_runner, mock_session_service):
+    mock_runner.return_value.run.return_value = [MockEvent(is_final=False)]
 
-    # Assert
+    response = client.post("/plan/propose")
     assert response.status_code == 200
-    assert response.json()["valid"] is True
+    data = response.json()
+    assert "Error" in data["goal"]
+
+
+def test_revise_plan_success(client, mock_runner, mock_session_service):
+    revised_plan_json = (
+        '{"week_start_date": "2023-01-22", "goal": "Revised Goal", "workouts": []}'
+    )
+    mock_runner.return_value.run.return_value = [
+        MockEvent(is_final=True, text=revised_plan_json)
+    ]
+
+    request_data = {
+        "current_plan": {
+            "week_start_date": "2023-01-15",
+            "goal": "Original Goal",
+            "workouts": [],
+        },
+        "feedback": "Add more upper body",
+    }
+
+    response = client.post("/plan/revise", json=request_data)
+    assert response.status_code == 200
+    data = response.json()
+    assert data["goal"] == "Revised Goal"
+
+
+def test_revise_plan_fallback(client, mock_runner, mock_session_service):
+    mock_runner.return_value.run.return_value = [MockEvent(is_final=True, text="bad")]
+
+    request_data = {
+        "current_plan": {
+            "week_start_date": "2023-01-15",
+            "goal": "Original Goal",
+            "workouts": [],
+        },
+        "feedback": "Make it better",
+    }
+
+    response = client.post("/plan/revise", json=request_data)
+    assert response.status_code == 200
+    data = response.json()
+    assert data["goal"] == "Original Goal"
+
+
+def test_validate_plan_success(client, mock_runner, mock_session_service):
+    valid_result_json = '{"valid": true, "issues": []}'
+    mock_runner.return_value.run.return_value = [
+        MockEvent(is_final=True, text=valid_result_json)
+    ]
+
+    plan_data = {"week_start_date": "2023-01-15", "goal": "Test Plan", "workouts": []}
+
+    response = client.post("/plan/validate", json=plan_data)
+    assert response.status_code == 200
+    data = response.json()
+    assert data["valid"] is True
+
+
+def test_validate_plan_failure(client, mock_runner, mock_session_service):
+    mock_runner.return_value.run.return_value = [MockEvent(is_final=False)]
+
+    plan_data = {"week_start_date": "2023-01-15", "goal": "Test Plan", "workouts": []}
+
+    response = client.post("/plan/validate", json=plan_data)
+    assert response.status_code == 200
+    data = response.json()
+    assert data["valid"] is False
+    assert "Error" in data["issues"][0]

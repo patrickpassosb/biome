@@ -1,6 +1,6 @@
 from google.adk.agents import LlmAgent
 from .config import MODEL_NAME
-from .schemas import MEMORY_RECORD_SCHEMA
+from .models import MemoryRecord
 from .tools import save_memory_record
 
 memory_curator_agent = LlmAgent(
@@ -14,5 +14,5 @@ memory_curator_agent = LlmAgent(
         "and important context for future retrieval."
     ),
     tools=[save_memory_record],
-    output_schema=MEMORY_RECORD_SCHEMA
+    output_schema=MemoryRecord,
 )

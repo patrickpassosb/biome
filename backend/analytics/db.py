@@ -4,8 +4,14 @@ from datetime import date, timedelta
 from typing import List, Dict, Any, Optional
 from models import TrendPoint, WorkoutLogEntry
 
-DB_PATH = "data/analytics.duckdb"
-CSV_PATH = "data/gym_data.csv"
+# Use an in-memory database for testing
+if os.environ.get("TESTING") == "true":
+    DB_PATH = ":memory:"
+    CSV_PATH = "data/gym_data.csv"  # The test setup can mock this if needed
+else:
+    DB_PATH = "data/analytics.duckdb"
+    CSV_PATH = "data/gym_data.csv"
+
 
 class AnalyticsEngine:
     def __init__(self):
@@ -17,7 +23,7 @@ class AnalyticsEngine:
         # Force recreation to apply schema changes (row_id added)
         # In a production app, we would use migrations
         self.con.execute("DROP TABLE IF EXISTS training_history")
-        
+
         # 1. User Data Table
         self.con.execute("""
             CREATE TABLE IF NOT EXISTS training_history (
@@ -62,7 +68,7 @@ class AnalyticsEngine:
                 weight_kg DOUBLE
             );
         """)
-        
+
         # Load Initial Data
         if os.path.exists(CSV_PATH):
             try:
@@ -91,7 +97,12 @@ class AnalyticsEngine:
                 SELECT row_number() OVER () as row_id, *
                 FROM read_csv_auto('{file_path}', header=True)
             """)
-            return {"status": "success", "rows": self.con.execute("SELECT COUNT(*) FROM training_history").fetchone()[0]}
+            return {
+                "status": "success",
+                "rows": self.con.execute(
+                    "SELECT COUNT(*) FROM training_history"
+                ).fetchone()[0],
+            }
         except Exception as e:
             raise e
 
@@ -100,16 +111,25 @@ class AnalyticsEngine:
         # Get next row_id
         res = self.con.execute("SELECT MAX(row_id) FROM training_history").fetchone()
         next_id = (res[0] or 0) + 1 if res else 1
-        
+
         query = """
             INSERT INTO training_history (row_id, date, workout, exercise, set_number, reps, weight_kg, rpe, notes)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         """
-        self.con.execute(query, [
-            next_id, entry.date, entry.workout, entry.exercise, 
-            entry.set_number, entry.reps, entry.weight_kg, 
-            entry.rpe, entry.notes
-        ])
+        self.con.execute(
+            query,
+            [
+                next_id,
+                entry.date,
+                entry.workout,
+                entry.exercise,
+                entry.set_number,
+                entry.reps,
+                entry.weight_kg,
+                entry.rpe,
+                entry.notes,
+            ],
+        )
 
     def log_weight(self, date_val: date, weight_kg: float):
         """Logs weight for a specific date, overwriting if exists."""
@@ -135,33 +155,53 @@ class AnalyticsEngine:
     def get_overview_metrics(self) -> Dict[str, Any]:
         latest_date = self.get_latest_date()
         start_of_week = latest_date - timedelta(days=latest_date.weekday())
-        
-        freq = self.con.execute(f"""
+
+        freq = (
+            self.con.execute(
+                f"""
             SELECT COUNT(DISTINCT date) 
             FROM {self.active_table} 
             WHERE date >= ? AND date <= ?
-        """, [start_of_week, latest_date]).fetchone()[0] or 0
+        """,
+                [start_of_week, latest_date],
+            ).fetchone()[0]
+            or 0
+        )
 
-        vol = self.con.execute(f"""
+        vol = (
+            self.con.execute(
+                f"""
             SELECT SUM(weight_kg * reps) 
             FROM {self.active_table} 
             WHERE date >= ? AND date <= ? AND weight_kg IS NOT NULL AND reps IS NOT NULL
-        """, [start_of_week, latest_date]).fetchone()[0] or 0.0
+        """,
+                [start_of_week, latest_date],
+            ).fetchone()[0]
+            or 0.0
+        )
 
-        weak_count = self.con.execute(f"""
+        weak_count = (
+            self.con.execute(
+                f"""
             SELECT COUNT(*) 
             FROM {self.active_table} 
             WHERE date >= ? AND date <= ? AND workout ILIKE '%Weak Point%'
-        """, [start_of_week, latest_date]).fetchone()[0] or 0
+        """,
+                [start_of_week, latest_date],
+            ).fetchone()[0]
+            or 0
+        )
 
         return {
             "weekly_frequency": freq,
             "total_volume_load_current_week": vol,
             "active_weak_points_count": weak_count,
-            "is_demo": self.active_table == "demo_training_history"
+            "is_demo": self.active_table == "demo_training_history",
         }
 
-    def get_trends(self, metric: str, exercise: Optional[str] = None) -> List[TrendPoint]:
+    def get_trends(
+        self, metric: str, exercise: Optional[str] = None
+    ) -> List[TrendPoint]:
         filter_clause = "AND exercise = ?" if exercise else ""
         params = [exercise] if exercise else []
         table = self.active_table
@@ -194,7 +234,7 @@ class AnalyticsEngine:
             query = f"""
                 SELECT date_trunc('week', date) as week_start, COUNT(DISTINCT date) as value
                 FROM {table}
-                { 'WHERE exercise = ?' if exercise else '' }
+                {"WHERE exercise = ?" if exercise else ""}
                 GROUP BY week_start
                 ORDER BY week_start
             """
@@ -221,7 +261,7 @@ class AnalyticsEngine:
                 "reps": r[4],
                 "weight_kg": r[5],
                 "rpe": r[6],
-                "notes": r[7]
+                "notes": r[7],
             }
             for r in results
         ]
@@ -261,7 +301,7 @@ class AnalyticsEngine:
             ORDER BY weight_diff DESC
         """
         progression = self.con.execute(progression_query).fetchall()
-        
+
         summary_query = f"""
             SELECT date, workout, COUNT(*) as sets, SUM(weight_kg * reps) as volume
             FROM {table}
@@ -272,17 +312,24 @@ class AnalyticsEngine:
         summaries = self.con.execute(summary_query).fetchall()
         return {
             "top_progressions": [
-                {"exercise": r[0], "start_weight": r[1], "end_weight": r[2], "diff": r[3]}
+                {
+                    "exercise": r[0],
+                    "start_weight": r[1],
+                    "end_weight": r[2],
+                    "diff": r[3],
+                }
                 for r in progression[:5]
             ],
             "recent_workout_summaries": [
                 {"date": str(r[0]), "workout": r[1], "sets": r[2], "volume": r[3]}
                 for r in summaries
-            ]
+            ],
         }
 
     def get_exercises(self) -> List[str]:
-        res = self.con.execute(f"SELECT DISTINCT exercise FROM {self.active_table} ORDER BY exercise").fetchall()
+        res = self.con.execute(
+            f"SELECT DISTINCT exercise FROM {self.active_table} ORDER BY exercise"
+        ).fetchall()
         return [r[0] for r in res if r[0]]
 
     def get_exercise_stats(self, exercise: str) -> Dict[str, Any]:
@@ -303,27 +350,31 @@ class AnalyticsEngine:
                 "max_level": 0.0,
                 "average_rpe": 0.0,
                 "total_volume": 0.0,
-                "total_sets": 0
+                "total_sets": 0,
             }
-        
+
         return {
             "max_weight": res[0] or 0.0,
             "max_level": res[1] or 0.0,
             "average_rpe": res[2] or 0.0,
             "total_volume": res[3] or 0.0,
-            "total_sets": res[4] or 0
+            "total_sets": res[4] or 0,
         }
 
-    async def get_automated_insights(self, exercise: Optional[str] = None) -> List[Dict[str, Any]]:
+    async def get_automated_insights(
+        self, exercise: Optional[str] = None
+    ) -> List[Dict[str, Any]]:
         insights = []
         table = self.active_table
-        
+
         # Log for debugging
         count = self.con.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0]
-        print(f"AUTOMATED INSIGHTS: Checking table '{table}' with {count} rows. Exercise: {exercise}")
-        
+        print(
+            f"AUTOMATED INSIGHTS: Checking table '{table}' with {count} rows. Exercise: {exercise}"
+        )
+
         # 0. Data Integrity Check (Chronology Anomaly)
-        # Find entries where a row appears chronologically LATER in the file 
+        # Find entries where a row appears chronologically LATER in the file
         # but has an EARLIER year (e.g. 2025 after 2026 started)
         integrity_query = f"""
             WITH ordered_history AS (
@@ -340,17 +391,19 @@ class AnalyticsEngine:
         try:
             anomalies = self.con.execute(integrity_query).fetchall()
             for date_err, prev_date in anomalies:
-                insights.append({
-                    "type": "critical",
-                    "category": "integrity",
-                    "message": f"Data entry error? {date_err.strftime('%b %d, %Y')} follows {prev_date.strftime('%b %d, %Y')} in your logs."
-                })
+                insights.append(
+                    {
+                        "type": "critical",
+                        "category": "integrity",
+                        "message": f"Data entry error? {date_err.strftime('%b %d, %Y')} follows {prev_date.strftime('%b %d, %Y')} in your logs.",
+                    }
+                )
         except Exception as e:
             print(f"Integrity check error: {e}")
 
         filter_clause = "AND exercise = ?" if exercise else ""
         params = [exercise] if exercise else []
-        
+
         # 1. Stagnation Detection
         stagnation_query = f"""
             WITH ranked_workouts AS (
@@ -371,12 +424,14 @@ class AnalyticsEngine:
         """
         stagnated = self.con.execute(stagnation_query, params).fetchall()
         for s in stagnated:
-            insights.append({
-                "type": "warning",
-                "category": "stagnation",
-                "exercise": s[0],
-                "message": f"Your performance on {s[0]} hasn't changed in the last 3 sessions. Consider increasing load or reps."
-            })
+            insights.append(
+                {
+                    "type": "warning",
+                    "category": "stagnation",
+                    "exercise": s[0],
+                    "message": f"Your performance on {s[0]} hasn't changed in the last 3 sessions. Consider increasing load or reps.",
+                }
+            )
 
         # 2. Significant Progress
         progress_query = f"""
@@ -396,14 +451,16 @@ class AnalyticsEngine:
         try:
             progressed = self.con.execute(progress_query, params).fetchall()
             for p in progressed:
-                insights.append({
-                    "type": "success",
-                    "category": "progress",
-                    "exercise": p[0],
-                    "message": f"Solid progress on {p[0]}! You've increased your load recently."
-                })
+                insights.append(
+                    {
+                        "type": "success",
+                        "category": "progress",
+                        "exercise": p[0],
+                        "message": f"Solid progress on {p[0]}! You've increased your load recently.",
+                    }
+                )
         except Exception:
-             pass
+            pass
 
         # 3. High RPE Alert
         rpe_query = f"""
@@ -416,17 +473,20 @@ class AnalyticsEngine:
         try:
             high_rpe = self.con.execute(rpe_query, params).fetchall()
             for h in high_rpe:
-                insights.append({
-                    "type": "warning",
-                    "category": "fatigue",
-                    "exercise": h[0],
-                    "message": f"Intensity alert for {h[0]} (Avg RPE {h[1]:.1f}). Consider a deload."
-                })
+                insights.append(
+                    {
+                        "type": "warning",
+                        "category": "fatigue",
+                        "exercise": h[0],
+                        "message": f"Intensity alert for {h[0]} (Avg RPE {h[1]:.1f}). Consider a deload.",
+                    }
+                )
         except Exception:
             pass
 
         limit = 3 if exercise else 5
         return insights[:limit]
+
 
 # Singleton instance
 analytics = AnalyticsEngine()

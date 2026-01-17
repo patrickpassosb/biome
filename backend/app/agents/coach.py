@@ -1,6 +1,6 @@
 from google.adk.agents import LlmAgent
 from .config import MODEL_NAME
-from .schemas import WEEKLY_PLAN_SCHEMA
+from .models import WeeklyPlan
 from .tools import get_user_profile, get_past_plan
 
 coach_agent = LlmAgent(
@@ -14,5 +14,5 @@ coach_agent = LlmAgent(
         "in the 'goal' or exercise 'notes' fields to justify your decisions."
     ),
     tools=[get_user_profile, get_past_plan],
-    output_schema=WEEKLY_PLAN_SCHEMA
+    output_schema=WeeklyPlan,
 )

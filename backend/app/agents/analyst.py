@@ -1,7 +1,7 @@
 from google.adk.agents import LlmAgent
 from .config import MODEL_NAME
-from .schemas import COACH_FINDINGS_SCHEMA
-from .tools import get_gym_metrics
+from .models import CoachFindings
+from .tools import get_gym_metrics, get_weight_history
 
 analyst_agent = LlmAgent(
     name="analyst",
@@ -12,6 +12,6 @@ analyst_agent = LlmAgent(
         "and identify key findings such as weak points, progress, consistency issues, "
         "or volume alerts. Ensure every finding is supported by the data."
     ),
-    tools=[get_gym_metrics],
-    output_schema=COACH_FINDINGS_SCHEMA
+    tools=[get_gym_metrics, get_weight_history],
+    output_schema=CoachFindings,
 )
