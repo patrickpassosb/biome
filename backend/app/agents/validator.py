@@ -13,5 +13,5 @@ validator_agent = LlmAgent(
         "if any are found."
     ),
     input_schema=WeeklyPlan,
-    output_schema=PlanValidationResult
+    output_schema=PlanValidationResult,
 )

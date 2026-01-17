@@ -14,5 +14,5 @@ memory_curator_agent = LlmAgent(
         "and important context for future retrieval."
     ),
     tools=[save_memory_record],
-    output_schema=MemoryRecord
+    output_schema=MemoryRecord,
 )

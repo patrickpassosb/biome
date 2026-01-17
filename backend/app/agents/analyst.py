@@ -13,5 +13,5 @@ analyst_agent = LlmAgent(
         "or volume alerts. Ensure every finding is supported by the data."
     ),
     tools=[get_gym_metrics, get_weight_history],
-    output_schema=CoachFindings
+    output_schema=CoachFindings,
 )

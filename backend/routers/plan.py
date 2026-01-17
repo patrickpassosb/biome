@@ -9,16 +9,21 @@ from google.genai import types
 
 router = APIRouter(prefix="/plan", tags=["Plan"])
 
+
 @router.post("/propose", response_model=WeeklyPlan)
 async def propose_plan():
     # This is a simplified, stateless implementation for a single-turn plan proposal.
     session_service = InMemorySessionService()
-    runner = Runner(agent=agent, app_name="biome_agent_plan", session_service=session_service)
+    runner = Runner(
+        agent=agent, app_name="biome_agent_plan", session_service=session_service
+    )
     session_id = "plan_proposal_session"
-    await session_service.create_session(app_name="biome_agent_plan", user_id="test_user", session_id=session_id)
+    await session_service.create_session(
+        app_name="biome_agent_plan", user_id="test_user", session_id=session_id
+    )
 
     prompt = "Propose a new weekly training plan based on the user's data."
-    content = types.Content(role='user', parts=[types.Part(text=prompt)])
+    content = types.Content(role="user", parts=[types.Part(text=prompt)])
 
     events = runner.run(user_id="test_user", session_id=session_id, new_message=content)
 
@@ -38,21 +43,30 @@ async def propose_plan():
             pass
 
     # Fallback or error response
-    return WeeklyPlan(week_start_date="2023-01-01", goal="Error: Could not generate plan.", workouts=[])
+    return WeeklyPlan(
+        week_start_date="2023-01-01",
+        goal="Error: Could not generate plan.",
+        workouts=[],
+    )
+
 
 @router.post("/revise", response_model=WeeklyPlan)
 async def revise_plan(request: RevisePlanRequest):
     # This is a simplified, stateless implementation for a single-turn plan revision.
     session_service = InMemorySessionService()
-    runner = Runner(agent=agent, app_name="biome_agent_revise", session_service=session_service)
+    runner = Runner(
+        agent=agent, app_name="biome_agent_revise", session_service=session_service
+    )
     session_id = "plan_revision_session"
-    await session_service.create_session(app_name="biome_agent_revise", user_id="test_user", session_id=session_id)
+    await session_service.create_session(
+        app_name="biome_agent_revise", user_id="test_user", session_id=session_id
+    )
 
     prompt = (
         f"Revise the following weekly training plan based on this feedback: '{request.feedback}'.\n\n"
         f"Current Plan:\n{request.current_plan.json()}"
     )
-    content = types.Content(role='user', parts=[types.Part(text=prompt)])
+    content = types.Content(role="user", parts=[types.Part(text=prompt)])
 
     events = runner.run(user_id="test_user", session_id=session_id, new_message=content)
 
@@ -71,16 +85,23 @@ async def revise_plan(request: RevisePlanRequest):
     # Fallback to returning the original plan if revision fails
     return request.current_plan
 
+
 @router.post("/validate", response_model=PlanValidationResult)
 async def validate_plan(plan: WeeklyPlan):
     # This is a simplified, stateless implementation for a single-turn plan validation.
     session_service = InMemorySessionService()
-    runner = Runner(agent=validator_agent, app_name="biome_agent_validate", session_service=session_service)
+    runner = Runner(
+        agent=validator_agent,
+        app_name="biome_agent_validate",
+        session_service=session_service,
+    )
     session_id = "plan_validation_session"
-    await session_service.create_session(app_name="biome_agent_validate", user_id="test_user", session_id=session_id)
+    await session_service.create_session(
+        app_name="biome_agent_validate", user_id="test_user", session_id=session_id
+    )
 
     # The validator agent expects the plan as a JSON string in the input.
-    content = types.Content(role='user', parts=[types.Part(text=plan.json())])
+    content = types.Content(role="user", parts=[types.Part(text=plan.json())])
 
     events = runner.run(user_id="test_user", session_id=session_id, new_message=content)
 

@@ -22,6 +22,5 @@ coordinator_agent = LlmAgent(
         "3. Once the plan is created, ask the 'memory_curator' to save the plan and the findings as a memory record.\n"
         "Ensure each step is completed before moving to the next."
     ),
-    sub_agents=[analyst_agent, coach_agent, memory_curator_agent]
+    sub_agents=[analyst_agent, coach_agent, memory_curator_agent],
 )
-

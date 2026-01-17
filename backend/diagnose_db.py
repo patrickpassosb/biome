@@ -1,7 +1,7 @@
 import duckdb
 
-con = duckdb.connect('/app/data/analytics.duckdb')
-table = 'demo_training_history'
+con = duckdb.connect("/app/data/analytics.duckdb")
+table = "demo_training_history"
 query = f"""
     WITH ordered_history AS (
         SELECT date, row_id,

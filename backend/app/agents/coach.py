@@ -14,5 +14,5 @@ coach_agent = LlmAgent(
         "in the 'goal' or exercise 'notes' fields to justify your decisions."
     ),
     tools=[get_user_profile, get_past_plan],
-    output_schema=WeeklyPlan
+    output_schema=WeeklyPlan,
 )
