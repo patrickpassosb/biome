@@ -17,7 +17,22 @@ COPY pyproject.toml uv.lock ./
 # --frozen: sync with uv.lock
 # --no-install-project: only install dependencies, not the app itself yet
 # --no-dev: production dependencies only
-RUN uv sync --frozen --no-install-project --no-dev
+
+
+# --no-install-project: skip installing the current project
+RUN uv sync --frozen --no-dev --no-install-project
+
+# Stage 2: Runtime
+FROM python:3.12-slim
+
+WORKDIR /app
+
+# Ensure the venv's interpreter path exists at runtime.
+# Context7: https://github.com/astral-sh/uv/blob/main/docs/pip/environments.md
+RUN ln -s /usr/local/bin/python3.12 /usr/bin/python3.12
+
+# Copy the virtual environment from the builder
+COPY --from=builder /app/.venv /app/.venv
 
 # Copy application code
 COPY . .

@@ -24,5 +24,10 @@ COPY --from=builder /app/public ./public
 
 EXPOSE 3000
 
-# Next.js usually runs on 3000 by default unless configured otherwise
-CMD ["npm", "start"]
+# Context7: https://github.com/docker/docs/blob/main/content/manuals/build/concepts/dockerfile.md
+ENV PORT=3000
+ENV HOSTNAME="0.0.0.0"
+
+# Use the standalone server
+CMD ["node", "server.js"]
+
