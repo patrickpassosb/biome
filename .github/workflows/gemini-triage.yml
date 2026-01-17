@@ -2,6 +2,7 @@ name: '🔀 Gemini Triage'
 
 env:
   GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+  SELECTED_LABELS: ''
 
 on:
   workflow_call:

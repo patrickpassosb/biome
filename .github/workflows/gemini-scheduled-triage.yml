@@ -2,6 +2,7 @@ name: '📋 Gemini Scheduled Issue Triage'
 
 env:
   GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+  TRIAGED_ISSUES: ''
 
 on:
   schedule:
