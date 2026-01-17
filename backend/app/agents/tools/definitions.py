@@ -69,3 +69,17 @@ def save_memory_record(record: Dict[str, Any]) -> str:
     """
     # Mock implementation
     return "mem_12345"
+
+def get_weight_history() -> Dict[str, Any]:
+    """
+    Retrieves the user's weight history.
+
+    Returns:
+        A dictionary containing the user's weight history.
+    """
+    # Mock implementation
+    return {
+        "weight_history": [
+            {"date": "2023-01-01", "weight_kg": 80.0}
+        ]
+    }

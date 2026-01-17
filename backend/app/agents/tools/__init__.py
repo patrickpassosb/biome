@@ -3,4 +3,5 @@ from .definitions import (
     get_user_profile as get_user_profile,
     get_past_plan as get_past_plan,
     save_memory_record as save_memory_record,
+    get_weight_history as get_weight_history,
 )
