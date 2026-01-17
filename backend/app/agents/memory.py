@@ -21,13 +21,11 @@ memory_curator_agent = LlmAgent(
     instruction=(
         "You are a memory curator. Your job is to take raw training plans, analyst findings, "
         "and user feedback, and compress them into concise, high-value memory records.\n\n"
-
         "1. FILTERING: Do not simply store raw logs. Identify what actually matters for "
         "future coaching (e.g., 'User struggled with 120kg Squat depth').\n"
         "2. SUMMARIZATION: Summarize key insights, successful strategies, and important context.\n"
         "3. PERSISTENCE: Use the 'save_memory_record' tool to save the resulting summary "
         "to the persistent database.\n\n"
-
         "Format your output according to the MemoryRecord schema."
     ),
     # tools provide the agent with the ability to write to Firestore.

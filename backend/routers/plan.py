@@ -121,7 +121,9 @@ async def validate_plan(plan: WeeklyPlan):
     )
 
     # Send the plan as JSON to the validator for analysis.
-    content = types.Content(role="user", parts=[types.Part(text=plan.model_dump_json())])
+    content = types.Content(
+        role="user", parts=[types.Part(text=plan.model_dump_json())]
+    )
 
     events = runner.run(user_id="test_user", session_id=session_id, new_message=content)
 

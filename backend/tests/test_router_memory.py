@@ -16,6 +16,7 @@ def test_memory_write_and_timeline(client):
     """
     # Force use of local storage for predictable, network-free test execution.
     from memory.store import memory_store
+
     memory_store.use_firestore = False
     memory_store._local_storage = {}
 
@@ -45,6 +46,7 @@ def test_memory_search(client):
     based on keywords in the content payload.
     """
     from memory.store import memory_store
+
     memory_store.use_firestore = False
     memory_store._local_storage = {
         "1": {

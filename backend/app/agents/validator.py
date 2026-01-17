@@ -19,13 +19,11 @@ validator_agent = LlmAgent(
     instruction=(
         "You are a training validation expert. Your role is to find potential issues "
         "in the provided weekly training plan.\n\n"
-
         "CHECKLIST:\n"
         "- Volume: Is there excessive volume for a single session (>30 sets)?\n"
         "- Balance: Are any major muscle groups completely ignored?\n"
         "- Progression: Is the load increase unrealistic compared to past sessions?\n"
         "- Safety: Are high-injury-risk exercises programmed without proper context?\n\n"
-
         "If you find issues, provide a 'valid: false' status and a detailed list of 'issues'. "
         "If the plan is sound, return 'valid: true'."
     ),

@@ -1,6 +1,15 @@
+"""
+Diagnostic utility to list available Google Gemini models.
+
+This script verifies API key configuration and connectivity to the
+Google Generative AI service, listing all models that support
+content generation.
+"""
+
 import google.generativeai as genai
 import os
 
+# Retrieve API key from environment variables.
 api_key = os.getenv("GOOGLE_API_KEY")
 if not api_key:
     print("No API key found")

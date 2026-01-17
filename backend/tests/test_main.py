@@ -34,4 +34,4 @@ def test_metrics_trends_endpoint(client):
     response = client.get("/metrics/trends?metric=volume_load")
     assert response.status_code == 200
     data = response.json()
-    assert isinstance(data, list) # Returns an array of TrendPoint objects
+    assert isinstance(data, list)  # Returns an array of TrendPoint objects

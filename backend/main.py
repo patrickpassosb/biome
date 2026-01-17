@@ -23,19 +23,19 @@ app = FastAPI(
 # In production, 'allow_origins' should be limited to specific domains.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], # Allow all origins for development convenience.
+    allow_origins=["*"],  # Allow all origins for development convenience.
     allow_credentials=True,
-    allow_methods=["*"], # Allow all HTTP methods (GET, POST, etc.)
-    allow_headers=["*"], # Allow all headers
+    allow_methods=["*"],  # Allow all HTTP methods (GET, POST, etc.)
+    allow_headers=["*"],  # Allow all headers
 )
 
 # Aggregate routers from the 'routers' package.
 # Each router handles a specific domain of the application.
-app.include_router(metrics.router) # Training trends, overview, and exercise stats.
-app.include_router(plan.router)    # AI-driven plan generation and validation.
+app.include_router(metrics.router)  # Training trends, overview, and exercise stats.
+app.include_router(plan.router)  # AI-driven plan generation and validation.
 app.include_router(memory.router)  # Long-term snapshot storage and search.
-app.include_router(agent_router.router) # Real-time chat with the coaching team.
-app.include_router(data.router)    # Data management, demo mode, and CSV imports.
+app.include_router(agent_router.router)  # Real-time chat with the coaching team.
+app.include_router(data.router)  # Data management, demo mode, and CSV imports.
 
 
 @app.get("/")

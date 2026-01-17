@@ -8,8 +8,6 @@ google-adk tool pattern.
 
 from typing import Any, Dict
 from analytics.db import analytics
-from bio.store import bio_store
-from models import calculate_age
 
 
 def get_gym_metrics(user_id: str, start_date: str, end_date: str) -> Dict[str, Any]:
@@ -45,12 +43,7 @@ def get_user_profile(user_id: str) -> Dict[str, Any]:
     Returns:
         A dictionary containing goals, experience level, and training availability.
     """
-    bio = bio_store.get_bio(user_id)
-    if bio:
-        profile = bio.model_dump(mode="json")
-        profile["computed_age"] = calculate_age(bio.date_of_birth)
-        return profile
-
+    # Mock implementation for the hackathon prototype.
     return {
         "user_id": user_id,
         "goals": ["increase_strength", "hypertrophy"],
@@ -76,7 +69,7 @@ def get_past_plan(user_id: str) -> Dict[str, Any]:
     return {
         "week_start_date": "2023-10-23",
         "goal": "Hypertrophy block",
-        "workouts": [], # Should ideally contain the previous workout structures
+        "workouts": [],  # Should ideally contain the previous workout structures
     }
 
 

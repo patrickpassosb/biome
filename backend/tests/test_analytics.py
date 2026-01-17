@@ -41,7 +41,7 @@ def test_get_overview_metrics():
     metrics = analytics.get_overview_metrics()
     assert metrics["weekly_frequency"] == 1  # One distinct day
     assert metrics["total_volume_load_current_week"] >= 500  # 50kg * 10 reps
-    assert metrics["active_weak_points_count"] == 1 # Correct workout string match
+    assert metrics["active_weak_points_count"] == 1  # Correct workout string match
 
 
 def test_get_trends_volume():

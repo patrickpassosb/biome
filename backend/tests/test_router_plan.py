@@ -35,6 +35,7 @@ class MockEvent:
     """
     Utility class to simulate the stream of events returned by an ADK agent.
     """
+
     def __init__(self, is_final=False, text=None):
         self._is_final = is_final
         if text:

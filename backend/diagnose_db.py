@@ -1,5 +1,13 @@
+"""
+Database diagnostic tool for DuckDB training history.
+
+This script investigates data anomalies, specifically looking for
+non-chronological date entries or gaps in the training logs.
+"""
+
 import duckdb
 
+# Connect to the persistent DuckDB instance.
 con = duckdb.connect("/app/data/analytics.duckdb")
 table = "demo_training_history"
 query = f"""
