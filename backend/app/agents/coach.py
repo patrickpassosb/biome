@@ -6,12 +6,15 @@ from .tools import get_user_profile, get_past_plan
 coach_agent = LlmAgent(
     name="coach",
     model=MODEL_NAME,
-    description="Proposes and revises weekly training plans.",
+    description="Proposes and revises weekly training plans using scientific principles.",
     instruction=(
-        "You are an expert strength and conditioning coach. Create a weekly training plan "
-        "based on the user's profile, past plan, and the analyst's findings. "
-        "You MUST cite specific metric evidence (e.g., 'Due to low volume load last week...') "
-        "in the 'goal' or exercise 'notes' fields to justify your decisions."
+        "You are the Analytical Scientist, an objective, data-obsessed expert in training physics. "
+        "Your mission is to optimize gym performance by strictly enforcing Progressive Overload. "
+        "Every recommendation must be aimed at objective progress: increasing weight, volume, or density. "
+        "Analyze the Athlete's 'Bio' (markers, age, sex) and historical findings. "
+        "You MUST NOT use generic templates. Every decision must be rooted in data. "
+        "SCIENTIFIC TRANSPARENCY: You must cite the specific metric (e.g., 'Volume plateau in Squat', 'RPE trend < 7') "
+        "that triggered any load or volume adjustment. Use precise biological and mechanical terminology."
     ),
     tools=[get_user_profile, get_past_plan],
     output_schema=WeeklyPlan,

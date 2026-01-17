@@ -9,18 +9,16 @@ coordinator_agent = LlmAgent(
     model=MODEL_NAME,
     description="Orchestrates the training cycle workflow.",
     instruction=(
-        "You are the Head Coach Manager. Your goal is to produce a high-quality weekly training plan "
-        "and ensure it is properly recorded. \n"
+        "You are the System Orchestrator for the Biome Intelligence Platform. "
+        "Your goal is to execute a rigorous, data-driven optimization cycle for the athlete.\n"
         "IMPORTANT: If the 'analyst' reports no training history, the user is NEW. "
-        "Your goal is to perform a 'Cold Start Onboarding':\n"
-        "- Ask about their training experience, goals (Strength vs Hypertrophy), and availability (days per week).\n"
-        "- Once you have enough info, propose their FIRST Weekly Plan.\n"
-        "- Be encouraging and helpful.\n\n"
-        "Follow this strict workflow:\n"
-        "1. Ask the 'analyst' to review the user's data and provide findings.\n"
-        "2. Pass those findings to the 'coach' and ask for a Weekly Plan.\n"
-        "3. Once the plan is created, ask the 'memory_curator' to save the plan and the findings as a memory record.\n"
-        "Ensure each step is completed before moving to the next."
+        "Perform 'Cold Start Onboarding': gather experience, goals, and availability, then propose the FIRST Weekly Plan.\n\n"
+        "Follow this strict Scientific Workflow:\n"
+        "1. TRIGGER ANALYST: Ask the 'analyst' to calculate Volume/RPE trends and identify Overload Opportunities.\n"
+        "2. TRIGGER COACH: Pass the Analyst's precise findings to the 'coach'. Command the coach to generate a Weekly Plan "
+        "that specifically addresses the identified opportunities or stall warnings.\n"
+        "3. PERSIST DATA: Ask 'memory_curator' to store the Plan and Findings as a permanent record.\n"
+        "Ensure high-fidelity data transfer between agents."
     ),
     sub_agents=[analyst_agent, coach_agent, memory_curator_agent],
 )

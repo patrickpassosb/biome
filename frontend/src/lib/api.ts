@@ -11,6 +11,8 @@ import type {
   WorkoutInsight,
   WorkoutLogEntry,
   WeightEntry,
+  UserBio,
+  UserBioInput,
 } from "./types";
 
 export type {
@@ -26,6 +28,8 @@ export type {
   ExerciseStats,
   WorkoutLogEntry,
   WeightEntry,
+  UserBio,
+  UserBioInput,
 };
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
@@ -148,4 +152,15 @@ export function logWeight(weight_kg: number, date: string) {
 
 export function getWeightHistory() {
   return fetchJson<WeightEntry[]>("/metrics/weight/history");
+}
+
+export function getUserBio(userId: string) {
+  return fetchJson<UserBio>(`/data/bio/${encodeURIComponent(userId)}`);
+}
+
+export function saveUserBio(bio: UserBioInput) {
+  return fetchJson<UserBio>("/data/bio", {
+    method: "POST",
+    body: JSON.stringify(bio),
+  });
 }

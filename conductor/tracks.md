@@ -4,11 +4,11 @@ This file tracks all major tracks for the project. Each track has its own detail
 
 ---
 
-- [ ] **Track: Implement "Analytical Scientist" Coaching Logic**
+- [x] **Track: Implement "Analytical Scientist" Coaching Logic**
   *Link: [./tracks/coaching_logic_20260117/](./tracks/coaching_logic_20260117/)*
 
 - [ ] **Track: Bio-Marker Integration & Persistent Memory**
   *Link: [./tracks/bio_markers_20260117/](./tracks/bio_markers_20260117/)*
 
-- [ ] **Track: GCP Cloud Run Deployment Pipeline**
+- [x] **Track: GCP Cloud Run Deployment Pipeline**
   *Link: [./tracks/gcp_deployment_20260117/](./tracks/gcp_deployment_20260117/)*

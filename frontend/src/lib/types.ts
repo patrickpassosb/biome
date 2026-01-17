@@ -119,3 +119,16 @@ export type WeightEntry = {
   date: string;
   weight_kg: number;
 };
+
+export type UserBio = {
+  user_id: string;
+  sex: "male" | "female" | "other";
+  date_of_birth: string;
+  age: number;
+  weight: number;
+  weight_unit: "kg" | "lb";
+  goals: Array<"build_muscle" | "lose_fat" | "maintain">;
+  updated_at: string;
+};
+
+export type UserBioInput = Omit<UserBio, "updated_at">;

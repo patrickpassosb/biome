@@ -1,5 +1,7 @@
 from typing import Any, Dict
 from analytics.db import analytics
+from bio.store import bio_store
+from models import calculate_age
 
 
 def get_gym_metrics(user_id: str, start_date: str, end_date: str) -> Dict[str, Any]:
@@ -19,7 +21,12 @@ def get_user_profile(user_id: str) -> Dict[str, Any]:
     Returns:
         A dictionary containing user profile data.
     """
-    # Mock implementation
+    bio = bio_store.get_bio(user_id)
+    if bio:
+        profile = bio.model_dump(mode="json")
+        profile["computed_age"] = calculate_age(bio.date_of_birth)
+        return profile
+
     return {
         "user_id": user_id,
         "goals": ["increase_strength", "hypertrophy"],

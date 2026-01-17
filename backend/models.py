@@ -1,6 +1,14 @@
 from typing import List, Optional, Literal, Dict, Any
 from datetime import date, datetime
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
+
+
+def calculate_age(date_of_birth: date, today: Optional[date] = None) -> int:
+    today = today or date.today()
+    years = today.year - date_of_birth.year
+    if (today.month, today.day) < (date_of_birth.month, date_of_birth.day):
+        years -= 1
+    return years
 
 # --- Weekly Plan Models ---
 
@@ -154,3 +162,39 @@ class WorkoutInsight(BaseModel):
 class WeightEntry(BaseModel):
     date: date
     weight_kg: float
+
+
+# --- Bio Models ---
+
+
+class UserBio(BaseModel):
+    user_id: str
+    sex: Literal["male", "female", "other"]
+    date_of_birth: date
+    age: int
+    weight: float
+    weight_unit: Literal["kg", "lb"]
+    goals: List[Literal["build_muscle", "lose_fat", "maintain"]]
+    updated_at: datetime = datetime.now()
+
+    # Context7: https://context7.com/pydantic/pydantic/llms.txt (field_validator usage)
+    @field_validator("date_of_birth")
+    @classmethod
+    def validate_date_of_birth(cls, value: date) -> date:
+        if value > date.today():
+            raise ValueError("Date of birth cannot be in the future.")
+        return value
+
+    @field_validator("age")
+    @classmethod
+    def validate_age(cls, value: int) -> int:
+        if value < 5 or value > 130:
+            raise ValueError("Age must be between 5 and 130.")
+        return value
+
+    @field_validator("weight")
+    @classmethod
+    def validate_weight(cls, value: float) -> float:
+        if value <= 0:
+            raise ValueError("Weight must be greater than 0.")
+        return value
