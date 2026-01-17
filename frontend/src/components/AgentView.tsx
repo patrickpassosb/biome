@@ -1,51 +1,79 @@
+/**
+ * AgentView Component
+ *
+ * Provides a real-time chat interface for interacting with the Biome AI coaching team.
+ * Users can ask questions about their training, request plan adjustments, and
+ * approve suggested updates directly from the chat.
+ */
+
 import { useState, useEffect, useRef } from "react";
 import { Send, Sparkles, User, Bot, Loader2 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { ChatRequest, ChatResponse, WeeklyPlan } from "@/lib/api";
 
+/**
+ * Message Interface
+ * Represents a single entry in the chat history.
+ */
 export interface Message {
     role: 'user' | 'assistant';
     content: string;
     timestamp: Date;
-    agentPersona?: string;
-    proposedPlan?: WeeklyPlan;
+    agentPersona?: string; // e.g., 'Workout Specialist'
+    proposedPlan?: WeeklyPlan; // Included if the AI suggests a new protocol
 }
 
 interface AgentViewProps {
-    currentPlan: WeeklyPlan | null;
-    onPlanUpdate: (plan: WeeklyPlan) => void;
-    chatWithAgent: (req: ChatRequest) => Promise<ChatResponse>;
-    messages: Message[];
-    setMessages: (msgs: Message[] | ((prev: Message[]) => Message[])) => void;
+    currentPlan: WeeklyPlan | null; // The active plan for context injection
+    onPlanUpdate: (plan: WeeklyPlan) => void; // Callback to save a new plan
+    chatWithAgent: (req: ChatRequest) => Promise<ChatResponse>; // API interaction
+    messages: Message[]; // List of messages to display
+    setMessages: (msgs: Message[] | ((prev: Message[]) => Message[])) => void; // State updater
 }
 
 export function AgentView({ currentPlan, onPlanUpdate, chatWithAgent, messages, setMessages }: AgentViewProps) {
+    // Local state for the text input field.
     const [input, setInput] = useState("");
+    // Boolean flag to show the typing indicator while the LLM is thinking.
     const [isTyping, setIsTyping] = useState(false);
+    // Reference to the scrollable container for auto-scrolling to new messages.
     const scrollRef = useRef<HTMLDivElement>(null);
 
+    /**
+     * Effect: Auto-scroll to the bottom of the chat whenever the message list grows.
+     */
     useEffect(() => {
         if (scrollRef.current) {
             scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
         }
     }, [messages]);
 
+    /**
+     * handleSend
+     *
+     * Orchestrates the user-initiated message flow.
+     */
     const handleSend = async () => {
+        // Prevent empty messages or sending without plan context.
         if (!input.trim() || !currentPlan) return;
 
         const userMsg: Message = { role: 'user', content: input, timestamp: new Date() };
+
+        // Optimistically update the UI with the user's message.
         setMessages(prev => [...prev, userMsg]);
         setInput("");
         setIsTyping(true);
 
         try {
-            // Map our messages to the API format
+            // 1. TRANSFORM: Map internal message format to the API request format.
             const chatMessages = messages.map(m => ({
                 role: m.role,
                 content: m.content,
                 timestamp: m.timestamp.toISOString(),
                 agent_persona: m.agentPersona
             }));
+
+            // Add the current user message to the historical context.
             chatMessages.push({
                 role: 'user',
                 content: input,
@@ -53,11 +81,13 @@ export function AgentView({ currentPlan, onPlanUpdate, chatWithAgent, messages, 
                 agent_persona: undefined
             });
 
+            // 2. API CALL: Send the conversation history and state to the AI Agent.
             const response = await chatWithAgent({
                 messages: chatMessages,
                 current_plan: currentPlan
             });
 
+            // 3. UPDATE: Add the AI's structured response to the chat.
             const agentMsg: Message = {
                 role: 'assistant',
                 content: response.message,
@@ -67,6 +97,7 @@ export function AgentView({ currentPlan, onPlanUpdate, chatWithAgent, messages, 
             };
             setMessages(prev => [...prev, agentMsg]);
         } catch {
+            // Error Handling: Provide a friendly system message if the backend is down.
             setMessages(prev => [...prev, {
                 role: 'assistant',
                 content: "The team is momentarily unavailable. Let me check the logs and I'll be right back.",
@@ -78,6 +109,11 @@ export function AgentView({ currentPlan, onPlanUpdate, chatWithAgent, messages, 
         }
     };
 
+    /**
+     * handleApprovePlan
+     *
+     * Triggered when the user clicks 'Approve & Update Plan' on an AI suggestion.
+     */
     const handleApprovePlan = (plan: WeeklyPlan) => {
         onPlanUpdate(plan);
         setMessages(prev => [...prev, {
@@ -90,7 +126,7 @@ export function AgentView({ currentPlan, onPlanUpdate, chatWithAgent, messages, 
 
     return (
         <div className="flex flex-col h-full max-w-4xl mx-auto rounded-3xl overflow-hidden border border-[color:var(--glass-border)] bg-[color:var(--glass-surface)] shadow-2xl">
-            {/* Header */}
+            {/* --- Chat Header --- */}
             <div className="p-6 border-b border-[color:var(--glass-border)] flex items-center gap-3 bg-black/40">
                 <div className="p-2 rounded-xl bg-white/10 text-white">
                     <Sparkles className="w-6 h-6" />
@@ -101,20 +137,23 @@ export function AgentView({ currentPlan, onPlanUpdate, chatWithAgent, messages, 
                 </div>
             </div>
 
-            {/* Chat Area */}
+            {/* --- Message History --- */}
             <div ref={scrollRef} className="flex-1 overflow-y-auto p-6 space-y-6">
                 {messages.map((msg, idx) => (
                     <div key={idx} className={`flex gap-4 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                        {/* Bot Avatar */}
                         {msg.role === 'assistant' && (
                             <div className="w-8 h-8 rounded-full bg-white text-black flex items-center justify-center shrink-0">
                                 <Bot className="w-5 h-5" />
                             </div>
                         )}
 
+                        {/* Message Bubble */}
                         <div className={`max-w-[80%] p-4 rounded-2xl ${msg.role === 'user'
                             ? 'bg-white text-black rounded-tr-none'
                             : 'bg-[color:var(--card)] border border-[color:var(--glass-border)] text-[color:var(--foreground)] rounded-tl-none'
                             }`}>
+                            {/* Agent Identity Label */}
                             {msg.agentPersona && (
                                 <div className="flex items-center gap-2 mb-2">
                                     <span className="text-[10px] font-bold uppercase tracking-widest text-white/40">
@@ -122,6 +161,8 @@ export function AgentView({ currentPlan, onPlanUpdate, chatWithAgent, messages, 
                                     </span>
                                 </div>
                             )}
+
+                            {/* Render AI content using Markdown */}
                             <div className="prose prose-invert max-w-none text-sm leading-relaxed">
                                 <ReactMarkdown
                                     components={{
@@ -137,6 +178,7 @@ export function AgentView({ currentPlan, onPlanUpdate, chatWithAgent, messages, 
                                 </ReactMarkdown>
                             </div>
 
+                            {/* Plan Suggestion Card (Conditional) */}
                             {msg.proposedPlan && (
                                 <div className="mt-4 p-4 rounded-xl bg-white/5 border border-white/10 animate-in slide-in-from-bottom-2">
                                     <div className="flex items-center justify-between mb-3">
@@ -153,11 +195,13 @@ export function AgentView({ currentPlan, onPlanUpdate, chatWithAgent, messages, 
                                 </div>
                             )}
 
+                            {/* Message Timestamp */}
                             <p className="text-[10px] opacity-50 mt-2 text-right">
                                 {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                             </p>
                         </div>
 
+                        {/* User Avatar */}
                         {msg.role === 'user' && (
                             <div className="w-8 h-8 rounded-full bg-[color:var(--card)] border border-[color:var(--glass-border)] flex items-center justify-center shrink-0">
                                 <User className="w-5 h-5 text-white" />
@@ -166,6 +210,7 @@ export function AgentView({ currentPlan, onPlanUpdate, chatWithAgent, messages, 
                     </div>
                 ))}
 
+                {/* Typing Indicator */}
                 {isTyping && (
                     <div className="flex gap-4">
                         <div className="w-8 h-8 rounded-full bg-white text-black flex items-center justify-center shrink-0">
@@ -179,7 +224,7 @@ export function AgentView({ currentPlan, onPlanUpdate, chatWithAgent, messages, 
                 )}
             </div>
 
-            {/* Input Area */}
+            {/* --- Chat Input Area --- */}
             <div className="p-4 bg-black/40 border-t border-[color:var(--glass-border)]">
                 <div className="relative flex items-center">
                     <input

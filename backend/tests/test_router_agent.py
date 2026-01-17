@@ -1,9 +1,22 @@
+"""
+Integration tests for the AI Agent Chat router.
+
+These tests simulate a stateful conversation with the agent,
+verifying that context is maintained across multiple round-trips.
+"""
+
 from google.adk.events import Event
 from google.genai.types import Content, Part
 
 
 def test_agent_chat_stateful(client, mock_adk_run):
-    # Configure the mock to return different responses for sequential calls
+    """
+    Simulates a two-turn conversation to ensure session state works.
+
+    1. Turn 1: User introduces themselves.
+    2. Turn 2: User asks for their name.
+    """
+    # Configure the mock to return different responses for sequential calls.
     mock_adk_run.side_effect = [
         [
             Event(
@@ -19,7 +32,7 @@ def test_agent_chat_stateful(client, mock_adk_run):
         ],
     ]
 
-    # First message
+    # TURN 1: User says name.
     chat_payload = {
         "messages": [{"role": "user", "content": "My name is Jules."}],
         "current_plan": {
@@ -31,7 +44,7 @@ def test_agent_chat_stateful(client, mock_adk_run):
     response = client.post("/agent/chat", json=chat_payload)
     assert response.status_code == 200
 
-    # Second message
+    # TURN 2: User asks for name.
     chat_payload = {
         "messages": [{"role": "user", "content": "What is my name?"}],
         "current_plan": {
@@ -42,4 +55,5 @@ def test_agent_chat_stateful(client, mock_adk_run):
     }
     response = client.post("/agent/chat", json=chat_payload)
     assert response.status_code == 200
+    # The session should have remembered "Jules" from the first turn.
     assert "Jules" in response.json()["message"]

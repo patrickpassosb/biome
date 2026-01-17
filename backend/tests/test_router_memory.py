@@ -1,8 +1,20 @@
+"""
+Integration tests for the Memory Management router.
+
+Verifies the HTTP surface for writing, searching, and viewing
+the history of agent-generated signals.
+"""
+
 from datetime import datetime
 
 
 def test_memory_write_and_timeline(client):
-    # Ensure we are using local storage for predictable tests
+    """
+    Tests the full lifecycle of a memory record:
+    1. Write a record via POST /memory/write.
+    2. Retrieve the record via GET /memory/timeline.
+    """
+    # Force use of local storage for predictable, network-free test execution.
     from memory.store import memory_store
 
     memory_store.use_firestore = False
@@ -15,11 +27,12 @@ def test_memory_write_and_timeline(client):
         "created_at": datetime.now().isoformat(),
     }
 
+    # Step 1: Write
     response = client.post("/memory/write", json=record)
     assert response.status_code == 200
     assert response.json()["id"] == "test-1"
 
-    # Check timeline
+    # Step 2: Check Timeline
     response = client.get("/memory/timeline")
     assert response.status_code == 200
     data = response.json()
@@ -28,6 +41,10 @@ def test_memory_write_and_timeline(client):
 
 
 def test_memory_search(client):
+    """
+    Verifies that the /memory/search endpoint correctly filters records
+    based on keywords in the content payload.
+    """
     from memory.store import memory_store
 
     memory_store.use_firestore = False
@@ -46,14 +63,14 @@ def test_memory_search(client):
         },
     }
 
-    # Search by type
+    # SEARCH BY TYPE: reflection
     search_payload = {"type": "reflection", "limit": 5}
     response = client.post("/memory/search", json=search_payload)
     assert response.status_code == 200
     assert len(response.json()) == 1
     assert response.json()[0]["id"] == "2"
 
-    # Search by query
+    # SEARCH BY CONTENT: 'tired'
     search_payload = {"query": "tired"}
     response = client.post("/memory/search", json=search_payload)
     assert response.status_code == 200

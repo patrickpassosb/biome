@@ -1,24 +1,43 @@
+/**
+ * Central type definitions for the Biome frontend.
+ *
+ * These interfaces and types strictly mirror the backend Pydantic models
+ * to ensure end-to-end type safety and predictable data flow.
+ */
+
+/**
+ * Top-level metrics displayed in the dashboard header.
+ */
 export type OverviewMetrics = {
-  weekly_frequency: number;
-  total_volume_load_current_week: number;
-  active_weak_points_count: number;
-  is_demo: boolean;
+  weekly_frequency: number;       // Days trained in the current week.
+  total_volume_load_current_week: number; // Total weight * reps moved.
+  active_weak_points_count: number; // Number of flagged weak points.
+  is_demo: boolean;               // True if viewing sample data.
 };
 
+/**
+ * Valid metrics for time-series trend requests.
+ */
 export type TrendMetric =
   | "volume_load"
   | "average_rpe"
   | "max_weight"
   | "weekly_frequency";
 
+/**
+ * A single point in a trend chart.
+ */
 export type TrendPoint = {
-  date: string;
+  date: string; // ISO format
   value: number;
 };
 
+/**
+ * Complete definition of a weekly training protocol.
+ */
 export type WeeklyPlan = {
   week_start_date: string;
-  goal: string;
+  goal: string; // High-level objective
   workouts: Array<{
     day:
     | "Monday"
@@ -28,17 +47,20 @@ export type WeeklyPlan = {
     | "Friday"
     | "Saturday"
     | "Sunday";
-    focus: string;
+    focus: string; // Session focus (e.g. 'Push', 'Pull')
     exercises: Array<{
       name: string;
       target_sets: number;
       target_reps: string;
       target_rpe?: number;
-      notes?: string;
+      notes?: string; // AI-generated coaching cues
     }>;
   }>;
 };
 
+/**
+ * A data-backed insight from the AI Analyst.
+ */
 export type CoachFinding = {
   type:
   | "weak_point"
@@ -58,37 +80,55 @@ export type CoachFinding = {
   related_exercise?: string;
 };
 
+/**
+ * Persistent snapshot of a coaching event.
+ */
 export type MemoryRecord = {
   id?: string;
   created_at: string;
   type: "plan_snapshot" | "finding_snapshot" | "user_feedback" | "reflection";
-  content: Record<string, unknown>;
+  content: Record<string, unknown>; // Compressed insights
   tags?: string[];
 };
 
+/**
+ * Request payload for AI-driven plan updates.
+ */
 export type RevisePlanRequest = {
   current_plan: WeeklyPlan;
   feedback: string;
 };
 
+/**
+ * Individual entry in the agent chat interface.
+ */
 export type ChatMessage = {
   role: "user" | "assistant";
   content: string;
   timestamp: string;
-  agent_persona?: string;
+  agent_persona?: string; // e.g. 'Nutrition Specialist'
 };
 
+/**
+ * Request for a stateful multi-agent conversation.
+ */
 export type ChatRequest = {
   messages: ChatMessage[];
-  current_plan: WeeklyPlan;
+  current_plan: WeeklyPlan; // System state context
 };
 
+/**
+ * Response from the AI Coordinator.
+ */
 export type ChatResponse = {
   message: string;
-  proposed_plan?: WeeklyPlan;
+  proposed_plan?: WeeklyPlan; // Optional new plan generated during chat
   agent_persona: string;
 };
 
+/**
+ * Aggregated stats for a specific exercise.
+ */
 export type ExerciseStats = {
   max_weight: number;
   max_level: number;
@@ -97,13 +137,19 @@ export type ExerciseStats = {
   total_sets: number;
 };
 
+/**
+ * Heuristic-based insight for exercise performance.
+ */
 export type WorkoutInsight = {
   type: "info" | "warning" | "success" | "critical";
-  category: string;
+  category: string; // 'stagnation', 'fatigue', etc.
   exercise?: string;
   message: string;
 };
 
+/**
+ * Data structure for manual workout logging.
+ */
 export type WorkoutLogEntry = {
   date: string;
   workout: string;
@@ -115,20 +161,10 @@ export type WorkoutLogEntry = {
   notes?: string;
 };
 
+/**
+ * Individual weight measurement entry.
+ */
 export type WeightEntry = {
   date: string;
   weight_kg: number;
 };
-
-export type UserBio = {
-  user_id: string;
-  sex: "male" | "female" | "other";
-  date_of_birth: string;
-  age: number;
-  weight: number;
-  weight_unit: "kg" | "lb";
-  goals: Array<"build_muscle" | "lose_fat" | "maintain">;
-  updated_at: string;
-};
-
-export type UserBioInput = Omit<UserBio, "updated_at">;

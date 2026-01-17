@@ -1,37 +1,54 @@
+"""
+Unit tests for the DuckDB-based analytics engine.
+
+These tests verify the core SQL aggregation logic, including metric
+calculations, trend generation, and automated insight heuristics.
+"""
+
 from datetime import date
 from analytics.db import analytics
 
 
 def test_analytics_init():
-    # analytics is an instance of AnalyticsEngine using :memory:
+    """
+    Verifies that the AnalyticsEngine correctly initializes the
+    required tables in the DuckDB instance.
+    """
+    # analytics is a singleton instance using ':memory:' due to conftest.py env var.
     tables = analytics.con.execute("SHOW TABLES").fetchall()
     assert any(t[0] == "training_history" for t in tables)
 
 
 def test_get_latest_date():
-    # We seeded '2023-01-01' in conftest.py
+    """
+    Ensures that the engine can correctly identify the most recent
+    activity date, which is used for 'current week' windowing.
+    """
     analytics.con.execute("INSERT INTO training_history (date) VALUES ('2023-01-01')")
     assert analytics.get_latest_date() == date(2023, 1, 1)
 
 
 def test_get_overview_metrics():
-    # Add data for "current" week based on seeded latest date
-    # Seeded: 2023-01-01 (Sunday)
-    # latest_date = 2023-01-01
-    # start_of_week = 2023-01-01 - 6 days = 2022-12-26 (Monday)
-
+    """
+    Tests the high-level KPI calculation for a specific training week.
+    Verifies frequency, volume load, and weak point detection.
+    """
+    # Insert seed data for a 'Weak Point' session on Jan 1st, 2023.
     analytics.con.execute(
         "INSERT INTO training_history (date, workout, weight_kg, reps) VALUES ('2023-01-01', 'Weak Point Workout', 50, 10)"
     )
 
     metrics = analytics.get_overview_metrics()
-    assert metrics["weekly_frequency"] == 1  # 2023-01-01 is one distinct date
-    assert metrics["total_volume_load_current_week"] >= 500  # 50 * 10
-    assert metrics["active_weak_points_count"] == 1
+    assert metrics["weekly_frequency"] == 1  # One distinct day
+    assert metrics["total_volume_load_current_week"] >= 500  # 50kg * 10 reps
+    assert metrics["active_weak_points_count"] == 1  # Correct workout string match
 
 
 def test_get_trends_volume():
-    # Insert data so there's something to trend
+    """
+    Tests the time-series aggregation for volume load trends.
+    """
+    # Add historical data point.
     analytics.con.execute(
         "INSERT INTO training_history (date, weight_kg, reps) VALUES ('2023-01-01', 50, 10)"
     )

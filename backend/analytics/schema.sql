@@ -1,20 +1,23 @@
--- Strict schema definition derived from gym_data - Sheet1.csv
+-- Biome Training History Schema
+-- This schema is designed for DuckDB to support high-performance analytical queries.
+-- It matches the structure of common workout logging CSV exports.
 
+-- Table: training_history
+-- This is the primary table for storing individual exercise sets.
 CREATE TABLE training_history (
-    date DATE,
-    workout VARCHAR,
-    exercise VARCHAR,
-    set_number INTEGER,
-    reps INTEGER,
-    duration_seconds INTEGER,
-    weight_kg DOUBLE,
-    machine_level DOUBLE,
-    warm_up VARCHAR,
-    rpe DOUBLE,
-    notes VARCHAR
+    date DATE,              -- The date the session took place.
+    workout VARCHAR,       -- User-defined name for the workout session.
+    exercise VARCHAR,      -- The name of the exercise (e.g., 'Squat', 'Bench Press').
+    set_number INTEGER,    -- Sequence number for the set within the exercise.
+    reps INTEGER,          -- Number of repetitions performed.
+    duration_seconds INTEGER, -- Optional: Time taken for the set (for endurance/tempo).
+    weight_kg DOUBLE,      -- Resistance weight in kilograms.
+    machine_level DOUBLE,  -- Alternative for machine-based exercises (Level 1, 2, etc.).
+    warm_up VARCHAR,       -- Flag/Note for warm-up vs work sets.
+    rpe DOUBLE,            -- Rate of Perceived Exertion (Scale of 1-10).
+    notes VARCHAR          -- User-added notes for specific sets.
 );
 
--- Copy command for ingestion (configured for the specific CSV format)
--- Uses auto-detect for date format if possible, or explicit format if needed. 
--- Assuming standard CSV behavior.
--- COPY training_history FROM 'gym_data - Sheet1.csv' (AUTO_DETECT TRUE);
+-- Note on Ingestion:
+-- DuckDB's read_csv_auto is typically used in the Python logic (db.py)
+-- to dynamically load data without manual COPY commands.
