@@ -1,4 +1,5 @@
-FROM python:3.12-slim
+# Stage 1: Build
+FROM python:3.12-slim AS builder
 
 # Install uv
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /bin/uv
@@ -8,22 +9,34 @@ WORKDIR /app
 
 # Enable bytecode compilation
 ENV UV_COMPILE_BYTECODE=1
-ENV PYTHONPATH=/app
 
 # Copy dependency files
 COPY pyproject.toml uv.lock ./
 
 # Install dependencies
 # --frozen: sync with uv.lock
-# --no-install-project: only install dependencies, not the app itself yet
 # --no-dev: production dependencies only
-RUN uv sync --frozen --no-install-project --no-dev
+# --no-install-project: skip installing the current project
+RUN uv sync --frozen --no-dev --no-install-project
+
+# Stage 2: Runtime
+FROM python:3.12-slim
+
+WORKDIR /app
+
+# Copy the virtual environment from the builder
+COPY --from=builder /app/.venv /app/.venv
 
 # Copy application code
 COPY . .
 
-# Install the project
-RUN uv sync --frozen --no-dev
+# Set environment variables
+ENV PATH="/app/.venv/bin:$PATH"
+ENV PYTHONPATH=/app
+ENV PYTHONUNBUFFERED=1
+
+# Expose the port the app runs on
+EXPOSE 8080
 
 # Use uvicorn to run the app
-CMD ["uv", "run", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080"]
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080"]
