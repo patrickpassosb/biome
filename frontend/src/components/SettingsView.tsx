@@ -1,33 +1,60 @@
+/**
+ * SettingsView Component
+ *
+ * Provides administrative controls for the application, specifically
+ * focusing on data source management (Demo Mode) and CSV ingestion.
+ */
+
 import { useState } from "react";
 import { Upload, Database, Activity, RefreshCw } from "lucide-react";
 import { toggleDemoMode, importUserData } from "@/lib/api";
 
 export function SettingsView() {
+    // Boolean state for demo mode, synchronized with backend on change.
     const [isDemo, setIsDemo] = useState(false);
+    // Boolean state to show loading spinner during CSV upload.
     const [uploading, setUploading] = useState(false);
+    // Success/Error message for the import process.
     const [importMsg, setImportMsg] = useState("");
 
+    /**
+     * handleDemoToggle
+     *
+     * Communicates with the /data/demo endpoint to switch the active DuckDB tables.
+     * Triggers a page reload to refresh all global metrics and charts.
+     */
     const handleDemoToggle = async () => {
         const newState = !isDemo;
         setIsDemo(newState);
         try {
             await toggleDemoMode(newState);
-            // Reload to refresh global data state
+            // Full reload ensures all useAsyncData hooks across the app re-fetch.
             window.location.reload();
         } catch (e) {
-            console.error(e);
-            setIsDemo(!newState); // revert on error
+            console.error("Failed to toggle demo mode", e);
+            // Revert local state if the API call fails.
+            setIsDemo(!newState);
         }
     };
 
+    /**
+     * handleFileUpload
+     *
+     * Processes raw CSV files for training history migration.
+     */
     const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        // Prevent upload if no file is selected.
         if (!e.target.files?.[0]) return;
+
         setUploading(true);
         setImportMsg("");
+
         try {
+            // Upload using multipart/form-data via the importUserData client.
             await importUserData(e.target.files[0]);
             setImportMsg("Data imported successfully!");
-            // Give user a moment to see success before reload
+
+            // Give the user a moment to see the success message before reloading.
             setTimeout(() => window.location.reload(), 1500);
         } catch {
             setImportMsg("Import failed. Check CSV format.");
@@ -38,20 +65,21 @@ export function SettingsView() {
 
     return (
         <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in duration-500">
+            {/* --- View Header --- */}
             <header>
                 <h2 className="text-3xl font-bold tracking-tight text-white mb-2">Settings</h2>
                 <p className="text-[color:var(--muted-foreground)]">Manage your preferences and engine configuration.</p>
             </header>
 
             <div className="grid gap-6">
-                {/* Data Management Section */}
+                {/* --- Data Management Section --- */}
                 <div className="p-6 rounded-3xl border border-[color:var(--glass-border)] bg-[color:var(--glass-surface)]">
                     <h3 className="text-xl font-semibold text-white mb-4 flex items-center gap-2">
                         <Database className="w-5 h-5" /> Data Management
                     </h3>
 
                     <div className="space-y-6">
-                        {/* Demo Mode Toggle */}
+                        {/* Demo Mode Toggle: Switches between sample and real data. */}
                         <div className="flex items-center justify-between p-4 rounded-xl bg-white/5 border border-white/5">
                             <div>
                                 <p className="text-white font-medium flex items-center gap-2">
@@ -72,7 +100,7 @@ export function SettingsView() {
                             </button>
                         </div>
 
-                        {/* CSV Import */}
+                        {/* CSV Import Module: Handles historical data migration. */}
                         <div className="flex items-center justify-between p-4 rounded-xl bg-white/5 border border-white/5">
                             <div>
                                 <p className="text-white font-medium flex items-center gap-2">
@@ -89,6 +117,7 @@ export function SettingsView() {
                                 )}
                             </div>
                             <div className="relative">
+                                {/* Hidden file input overlaid by a styled button. */}
                                 <input
                                     type="file"
                                     accept=".csv"
@@ -105,7 +134,7 @@ export function SettingsView() {
                     </div>
                 </div>
 
-                {/* Profile Section */}
+                {/* --- Profile Section (Read-only Prototype) --- */}
                 <div className="p-6 rounded-3xl border border-[color:var(--glass-border)] bg-[color:var(--glass-surface)]">
                     <h3 className="text-xl font-semibold text-white mb-4">Profile</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -120,7 +149,7 @@ export function SettingsView() {
                     </div>
                 </div>
 
-                {/* Preferences */}
+                {/* --- Visual Preferences --- */}
                 <div className="p-6 rounded-3xl border border-[color:var(--glass-border)] bg-[color:var(--glass-surface)]">
                     <h3 className="text-xl font-semibold text-white mb-4">Preferences</h3>
                     <div className="space-y-4">
@@ -133,6 +162,7 @@ export function SettingsView() {
                                 <div className="absolute right-1 top-1 h-4 w-4 bg-black rounded-full"></div>
                             </div>
                         </div>
+                        {/* Placeholder for future features. */}
                         <div className="flex items-center justify-between opacity-50">
                             <div>
                                 <p className="text-white font-medium">Unit System</p>

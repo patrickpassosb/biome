@@ -3,17 +3,29 @@ info:
   title: Biome Training Intelligence API
   version: 1.0.0
   description: |
-    API for Training Intelligence Dashboard (Biome).
-    Strictly follows defined JSON schemas for Plans, Findings, and Memory.
+    # Biome API Specification
+
+    This API serves as the communication backbone between the Biome Dashboard (Next.js) and the AI Coaching Engine (FastAPI).
+    It is designed with strict contract-driven principles, ensuring that all AI-generated content (Weekly Plans, Findings)
+    adheres to predefined JSON schemas.
+
+    ## Key Domains:
+    - **Metrics:** Aggregated training statistics derived from DuckDB analytics.
+    - **Plan:** AI orchestration for generating and revising personalized workout protocols.
+    - **Memory:** Long-term persistence of coach-user interactions and reflections.
+    - **Agent:** Real-time, stateful chat sessions with specialized AI coaching personas.
+
+    All endpoints return standard HTTP status codes and leverage Pydantic for request/response validation.
 
 paths:
   /metrics/overview:
     get:
-      summary: Get overview key metrics
+      summary: Get high-level weekly KPIs
+      description: Returns frequency, volume load, and weak point counts for the current training week.
       tags: [Metrics]
       responses:
         '200':
-          description: Key performance indicators
+          description: Successful retrieval of weekly metrics.
           content:
             application/json:
               schema:
@@ -25,7 +37,8 @@ paths:
 
   /metrics/trends:
     get:
-      summary: Get historical trends for metrics
+      summary: Get historical time-series data
+      description: Returns a list of TrendPoints for charting. Supports filtering by exercise.
       tags: [Metrics]
       parameters:
         - name: metric
@@ -34,9 +47,14 @@ paths:
           schema:
             type: string
             enum: [volume_load, average_rpe, max_weight, weekly_frequency]
+        - name: exercise
+          in: query
+          required: false
+          schema:
+            type: string
       responses:
         '200':
-          description: Trend data points
+          description: Trend data points.
           content:
             application/json:
               schema:
@@ -50,10 +68,11 @@ paths:
   /plan/propose:
     post:
       summary: Generate a new weekly plan
+      description: Triggers the multi-agent system to analyze history and draft a fresh protocol.
       tags: [Plan]
       responses:
         '200':
-          description: Proposed plan
+          description: A structured weekly training protocol.
           content:
             application/json:
               schema:
@@ -61,7 +80,8 @@ paths:
 
   /plan/revise:
     post:
-      summary: Revise an existing plan based on feedback
+      summary: Update a plan via feedback
+      description: Takes a current plan and natural language feedback to produce a revised version.
       tags: [Plan]
       requestBody:
         required: true
@@ -76,7 +96,7 @@ paths:
                   type: string
       responses:
         '200':
-          description: Revised plan
+          description: The updated weekly training protocol.
           content:
             application/json:
               schema:
@@ -84,7 +104,8 @@ paths:
 
   /plan/validate:
     post:
-      summary: Validate a plan against rules
+      summary: Audit a plan for safety
+      description: Checks a protocol against safety constraints (e.g. excessive volume).
       tags: [Plan]
       requestBody:
         required: true
@@ -94,7 +115,7 @@ paths:
               $ref: './schemas/WeeklyPlan.schema.json'
       responses:
         '200':
-          description: Validation result
+          description: Validation result.
           content:
             application/json:
               schema:
@@ -107,7 +128,8 @@ paths:
 
   /memory/write:
     post:
-      summary: Store a memory record
+      summary: Persist a coaching signal
+      description: Stores a summary of findings or plans in the long-term memory store.
       tags: [Memory]
       requestBody:
         required: true
@@ -117,7 +139,7 @@ paths:
               $ref: './schemas/MemoryRecord.schema.json'
       responses:
         '200':
-          description: Record stored
+          description: Confirmation of record persistence.
           content:
             application/json:
               schema:
@@ -128,21 +150,22 @@ paths:
 
   /memory/search:
     post:
-      summary: Search memory records
+      summary: Search historical signals
+      description: Filters memory records by keyword or snapshot type.
       tags: [Memory]
       requestBody:
         required: true
-         content:
-           application/json:
-             schema:
-               type: object
-               properties:
-                 query: { type: string }
-                 type: { type: string }
-                 limit: { type: integer }
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                query: { type: string }
+                type: { type: string }
+                limit: { type: integer }
       responses:
         '200':
-          description: Search results
+          description: Matching memory records.
           content:
             application/json:
               schema:
@@ -152,7 +175,8 @@ paths:
 
   /memory/timeline:
     get:
-      summary: Get chronological memory timeline
+      summary: Get recent signal stream
+      description: Returns the latest memory records in descending chronological order.
       tags: [Memory]
       parameters:
         - name: limit
@@ -160,7 +184,7 @@ paths:
           schema: { type: integer, default: 20 }
       responses:
         '200':
-          description: Timeline
+          description: Chronological signal stream.
           content:
             application/json:
               schema:

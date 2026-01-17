@@ -1,63 +1,100 @@
 # Biome - Training Intelligence
 
-Biome is an AI-powered training intelligence dashboard designed to help strength athletes and coaches analyze training data, generate smart workout plans, and maintain a long-term memory of training progress.
+Biome is a production-grade, AI-powered training intelligence dashboard designed for strength athletes and coaches. It leverages a multi-agent AI system to analyze training data, generate optimized weekly plans, and maintain a long-term memory of progress and reflections.
 
-## Project Structure
+## 🚀 Overview
 
-- **`backend/`**: FastAPI application with DuckDB for analytics, Firestore for memory, and Google Gemini for AI-driven coaching.
-- **`frontend/`**: Next.js (React) application for the dashboard interface.
-- **`contracts/`**: OpenAPI and JSON Schema definitions for the system.
-- **`infra/`**: Documentation and setup instructions for production/infrastructure.
-- **`context/`**: System context and rules for AI agents.
+Biome goes beyond simple workout logging. It acts as an automated strength coach by:
+1.  **Ingesting Data:** Seamlessly processing workout CSVs.
+2.  **Analyzing Trends:** Identifying volume, RPE, and frequency patterns using DuckDB.
+3.  **Proposing Plans:** Generating personalized weekly protocols via Google Gemini.
+4.  **Maintaining Memory:** Storing long-term reflections in Firestore to provide persistent coaching context.
 
-## Getting Started
+---
+
+## 🏗️ Architecture
+
+The system is built with a modern, modular architecture:
+
+### 1. AI Agent Orchestration (ADK)
+The heart of Biome is a multi-agent system built with the Google Agent Development Kit (ADK).
+- **Coordinator Agent:** Manages the overall workflow, delegating tasks to specialized agents.
+- **Analyst Agent:** Reviews historical metrics and identifies findings (weak points, progress, fatigue).
+- **Coach Agent:** Synthesizes findings into actionable weekly plans, justifying decisions with data.
+- **Validator Agent:** Ensures proposed plans are safe, realistic, and consistent.
+- **Memory Curator:** Compresses and stores insights for long-term retrieval.
+
+### 2. Backend (FastAPI + DuckDB)
+- **Analytics Engine:** High-performance in-process analytics using DuckDB on training CSVs.
+- **API Layer:** Robust FastAPI implementation with strict Pydantic model validation.
+- **Persistence:** Google Cloud Firestore for long-term memory and DuckDB for local analytics.
+
+### 3. Frontend (Next.js + Tailwind)
+- **Dashboard:** Real-time visualization of volume velocity, exercise progress, and recent signals.
+- **AI Chat:** Direct interaction with the Biome coaching team for real-time adjustments and advice.
+- **Management:** Easy data import, weight tracking, and system configuration.
+
+---
+
+## 🚦 Getting Started
 
 ### Prerequisites
+- **Node.js:** v20+
+- **Python:** 3.12+
+- **`uv`:** Fast Python package manager (`curl -LsSf https://astral.sh/uv/install.sh | sh`)
+- **Google API Key:** Required for Gemini AI features.
 
-- Node.js (v20+)
-- Python (3.12+)
-- `uv` (Fast Python package manager)
-- Docker & Docker Compose (optional)
+### Local Setup
 
-### Quick Start (Local Development)
-
-1.  **Backend Setup**:
+1.  **Clone and Backend Setup:**
     ```bash
-    cd backend
+    git clone <repo-url>
+    cd biome/backend
     uv sync
-    # Set GOOGLE_API_KEY in .env (optional)
+    # Create .env and add GOOGLE_API_KEY
     ./dev.sh
     ```
 
-2.  **Frontend Setup**:
+2.  **Frontend Setup:**
     ```bash
-    cd frontend
+    cd ../frontend
     npm install
     npm run dev
     ```
 
-### Running with Docker Compose
+Access the dashboard at `http://localhost:3000` and the API docs at `http://localhost:8000/docs`.
 
-```bash
-docker-compose up --build
-```
+---
 
-The application will be available at:
-- Frontend: `http://localhost:3000`
-- Backend API: `http://localhost:8080/docs`
+## 📊 Data Flow
 
-## Features
+1.  **Ingestion:** User uploads a CSV or logs a workout. DuckDB processes the raw data.
+2.  **Analysis:** The Analyst Agent queries DuckDB tools to identify performance trends.
+3.  **Synthesis:** The Coach Agent takes Analyst findings and User profile data to draft a Weekly Plan.
+4.  **Validation:** The Validator Agent checks the plan against safety and volume constraints.
+5.  **Persistence:** The Memory Curator saves the final plan and insights to Firestore.
+6.  **Visualization:** The Next.js frontend fetches metrics and plans via the FastAPI layer.
 
-- **Automated Analytics**: Reads workout CSVs and provides volume, RPE, and frequency trends.
-- **AI Coach**: Proposes, validates, and revises weekly workout plans based on historical metrics.
-- **Long-term Memory**: Stores reflections and findings to provide context for future coaching sessions.
-- **Contract-Driven**: Strictly follows defined JSON schemas for all AI-generated content.
+---
 
-## Testing
+## 🧪 Testing
 
-For detailed instructions on running backend and frontend tests, including coverage reports, see:
-- [Testing Guide](backend/TESTING.md)
+Biome maintains high quality through comprehensive testing:
+- **Backend:** `pytest` with extensive mocking of AI and Firestore components.
+- **Frontend:** `vitest` for unit tests and `playwright` for end-to-end flows.
 
-## License
+See [backend/TESTING.md](backend/TESTING.md) for more details.
+
+---
+
+## 🛠️ Development
+
+- **Linting:** `ruff` for Python, `eslint` for TypeScript.
+- **Formatting:** `ruff format` and `prettier`.
+- **Contracts:** Strict adherence to OpenAPI and JSON schemas in the `contracts/` directory.
+
+---
+
+## 📜 License
 
 MIT

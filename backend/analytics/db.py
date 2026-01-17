@@ -1,30 +1,60 @@
+"""
+Analytics engine for the Biome application.
+
+This module provides the AnalyticsEngine class, which uses DuckDB to perform
+high-performance, in-process analytics on workout data stored in CSV files.
+It handles data ingestion, schema management, and complex SQL queries to
+derive training insights.
+"""
+
 import duckdb
 import os
 from datetime import date, timedelta
 from typing import List, Dict, Any, Optional
 from models import TrendPoint, WorkoutLogEntry
 
-# Use an in-memory database for testing
+# Environment-based configuration for database paths.
+# During testing, we use an in-memory database to ensure isolation.
 if os.environ.get("TESTING") == "true":
     DB_PATH = ":memory:"
-    CSV_PATH = "data/gym_data.csv"  # The test setup can mock this if needed
+    CSV_PATH = "data/gym_data.csv"
 else:
     DB_PATH = "data/analytics.duckdb"
     CSV_PATH = "data/gym_data.csv"
 
 
 class AnalyticsEngine:
+    """
+    Handles data ingestion, storage, and analytical queries using DuckDB.
+
+    The engine manages two main training history tables: one for actual user data
+    and one for demo purposes. It also tracks body weight history.
+    """
+
     def __init__(self):
+        """
+        Initializes the analytics engine and establishes a connection to DuckDB.
+        """
         self.con = duckdb.connect(DB_PATH)
+        # Defaults to actual user data.
         self.active_table = "training_history"
         self._init_db()
 
     def _init_db(self):
-        # Force recreation to apply schema changes (row_id added)
-        # In a production app, we would use migrations
+        """
+        Initializes the database schema and loads initial data.
+
+        Note: In a production environment, this should be handled via a migration
+        system (e.g., Alembic for DuckDB if supported, or custom scripts).
+        For this prototype, we force recreation of the training_history table
+        to ensure schema consistency.
+        """
+        # Ensure training_history schema is up-to-date.
         self.con.execute("DROP TABLE IF EXISTS training_history")
 
-        # 1. User Data Table
+        # Define the primary training history table.
+        # machine_level is used for exercises where weight isn't the only metric.
+        # rpe (Rate of Perceived Exertion) is critical for fatigue management.
         self.con.execute("""
             CREATE TABLE IF NOT EXISTS training_history (
                 row_id BIGINT,
@@ -42,7 +72,7 @@ class AnalyticsEngine:
             );
         """)
 
-        # 2. Demo Data Table (fresh start each time)
+        # Define a demo table that can be reset/toggled easily.
         self.con.execute("DROP TABLE IF EXISTS demo_training_history")
         self.con.execute("""
             CREATE TABLE demo_training_history (
@@ -61,7 +91,7 @@ class AnalyticsEngine:
             );
         """)
 
-        # 3. Weight History Table
+        # Define the weight history table for body composition tracking.
         self.con.execute("""
             CREATE TABLE IF NOT EXISTS weight_history (
                 date DATE PRIMARY KEY,
@@ -69,10 +99,11 @@ class AnalyticsEngine:
             );
         """)
 
-        # Load Initial Data
+        # Load Initial Data from CSV if the file exists.
+        # This allows for a 'cold start' with existing records.
         if os.path.exists(CSV_PATH):
             try:
-                # Load into BOTH tables so active_table has data by default
+                # Synchronize both tables initially.
                 for target in ["training_history", "demo_training_history"]:
                     self.con.execute(f"DELETE FROM {target}")
                     self.con.execute(f"""
@@ -82,14 +113,29 @@ class AnalyticsEngine:
                     """)
                 print(f"Loaded CSV into both tables from {CSV_PATH}")
             except Exception as e:
+                # Log error but don't crash if CSV is malformed.
                 print(f"Error loading CSV: {e}")
 
     def toggle_demo_mode(self, enabled: bool):
+        """
+        Switches the active data source between user and demo tables.
+
+        Args:
+            enabled: If True, all subsequent queries use demo_training_history.
+        """
         self.active_table = "demo_training_history" if enabled else "training_history"
         print(f"Switched to {self.active_table} (Demo: {enabled})")
 
     def import_user_data(self, file_path: str):
-        """Replaces user data with content from CSV file."""
+        """
+        Replaces user data with content from a new CSV file.
+
+        This is an 'overwrite' operation. It assigns new row IDs for
+        chronological integrity checks.
+
+        Args:
+            file_path: Path to the CSV file.
+        """
         try:
             self.con.execute("DELETE FROM training_history")
             self.con.execute(f"""
@@ -104,11 +150,18 @@ class AnalyticsEngine:
                 ).fetchone()[0],
             }
         except Exception as e:
+            # Propagate exception to the router for proper HTTP response.
             raise e
 
     def log_workout(self, entry: WorkoutLogEntry):
-        """Inserts a single log entry into the USER table (never demo)."""
-        # Get next row_id
+        """
+        Inserts a single workout log entry into the primary user table.
+        This operation is always performed on 'training_history'.
+
+        Args:
+            entry: A Pydantic model containing workout details.
+        """
+        # Auto-calculate next row_id based on current maximum.
         res = self.con.execute("SELECT MAX(row_id) FROM training_history").fetchone()
         next_id = (res[0] or 0) + 1 if res else 1
 
@@ -132,7 +185,13 @@ class AnalyticsEngine:
         )
 
     def log_weight(self, date_val: date, weight_kg: float):
-        """Logs weight for a specific date, overwriting if exists."""
+        """
+        Logs weight for a specific date, overwriting if an entry already exists.
+
+        Args:
+            date_val: The date of the measurement.
+            weight_kg: Body weight in kg.
+        """
         query = """
             INSERT INTO weight_history (date, weight_kg)
             VALUES (?, ?)
@@ -141,21 +200,35 @@ class AnalyticsEngine:
         self.con.execute(query, [date_val, weight_kg])
 
     def get_weight_history(self) -> List[Dict[str, Any]]:
-        """Returns weight history ordered by date."""
+        """
+        Retrieves ordered weight history for trend visualization.
+        """
         query = "SELECT date, weight_kg FROM weight_history ORDER BY date ASC"
         results = self.con.execute(query).fetchall()
         return [{"date": str(r[0]), "weight_kg": r[1]} for r in results]
 
     def get_latest_date(self) -> date:
+        """
+        Returns the date of the most recent entry in the active table.
+        Used for determining the 'current week' window.
+        """
         res = self.con.execute(f"SELECT MAX(date) FROM {self.active_table}").fetchone()
         if res and res[0]:
             return res[0]
         return date.today()
 
     def get_overview_metrics(self) -> Dict[str, Any]:
+        """
+        Calculates high-level KPIs for the current training week.
+
+        Returns:
+            Weekly frequency, total volume load, and count of 'Weak Point' workouts.
+        """
         latest_date = self.get_latest_date()
+        # Assume ISO week start (Monday).
         start_of_week = latest_date - timedelta(days=latest_date.weekday())
 
+        # Frequency: Number of unique days trained this week.
         freq = (
             self.con.execute(
                 f"""
@@ -168,6 +241,7 @@ class AnalyticsEngine:
             or 0
         )
 
+        # Volume Load: Sum of (Weight * Reps) for all sets this week.
         vol = (
             self.con.execute(
                 f"""
@@ -180,6 +254,7 @@ class AnalyticsEngine:
             or 0.0
         )
 
+        # Weak Points: Count of sessions tagged as targeting a specific weakness.
         weak_count = (
             self.con.execute(
                 f"""
@@ -202,6 +277,13 @@ class AnalyticsEngine:
     def get_trends(
         self, metric: str, exercise: Optional[str] = None
     ) -> List[TrendPoint]:
+        """
+        Aggregates historical data into trend points for charting.
+
+        Args:
+            metric: The name of the metric to trend (volume_load, average_rpe, etc.)
+            exercise: Optional filter to trend a single exercise.
+        """
         filter_clause = "AND exercise = ?" if exercise else ""
         params = [exercise] if exercise else []
         table = self.active_table
@@ -223,6 +305,7 @@ class AnalyticsEngine:
                 ORDER BY date
             """
         elif metric == "max_weight":
+            # Handles both free weights and machines by coalescing.
             query = f"""
                 SELECT date, MAX(COALESCE(machine_level, 0) + COALESCE(weight_kg, 0)) as value
                 FROM {table}
@@ -245,6 +328,9 @@ class AnalyticsEngine:
         return [TrendPoint(date=r[0], value=float(r[1])) for r in results]
 
     def get_recent_history(self, limit: int = 50) -> List[Dict[str, Any]]:
+        """
+        Retrieves the raw log entries for recent activity.
+        """
         query = f"""
             SELECT date, workout, exercise, set_number, reps, weight_kg, rpe, notes
             FROM {self.active_table}
@@ -267,6 +353,10 @@ class AnalyticsEngine:
         ]
 
     def get_progression_analysis(self) -> Dict[str, Any]:
+        """
+        Identifies exercises with the most significant strength increases.
+        Compares the starting weight with the most recent weight for each exercise.
+        """
         table = self.active_table
         progression_query = f"""
             WITH exercise_bounds AS (
@@ -302,6 +392,7 @@ class AnalyticsEngine:
         """
         progression = self.con.execute(progression_query).fetchall()
 
+        # Brief summary of the last few workouts.
         summary_query = f"""
             SELECT date, workout, COUNT(*) as sets, SUM(weight_kg * reps) as volume
             FROM {table}
@@ -327,12 +418,18 @@ class AnalyticsEngine:
         }
 
     def get_exercises(self) -> List[str]:
+        """
+        Returns a sorted list of all unique exercise names recorded.
+        """
         res = self.con.execute(
             f"SELECT DISTINCT exercise FROM {self.active_table} ORDER BY exercise"
         ).fetchall()
         return [r[0] for r in res if r[0]]
 
     def get_exercise_stats(self, exercise: str) -> Dict[str, Any]:
+        """
+        Calculates lifetime stats for a specific exercise.
+        """
         query = f"""
             SELECT 
                 MAX(weight_kg) as max_weight,
@@ -364,18 +461,20 @@ class AnalyticsEngine:
     async def get_automated_insights(
         self, exercise: Optional[str] = None
     ) -> List[Dict[str, Any]]:
+        """
+        Heuristic-based insight generation engine.
+
+        Identifies:
+        1. Data Integrity Issues (log entries out of sequence).
+        2. Stagnation (no load increase in 3 sessions).
+        3. Significant Progress (>5% increase in 30 days).
+        4. High RPE Alerts (Avg RPE > 9 in the last week).
+        """
         insights = []
         table = self.active_table
 
-        # Log for debugging
-        count = self.con.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0]
-        print(
-            f"AUTOMATED INSIGHTS: Checking table '{table}' with {count} rows. Exercise: {exercise}"
-        )
-
         # 0. Data Integrity Check (Chronology Anomaly)
-        # Find entries where a row appears chronologically LATER in the file
-        # but has an EARLIER year (e.g. 2025 after 2026 started)
+        # Identifies when a record appears later in the file but has an earlier year.
         integrity_query = f"""
             WITH ordered_history AS (
                 SELECT date, row_id,
@@ -405,6 +504,7 @@ class AnalyticsEngine:
         params = [exercise] if exercise else []
 
         # 1. Stagnation Detection
+        # Triggers if the maximum weight for an exercise hasn't changed in the last 3 sessions.
         stagnation_query = f"""
             WITH ranked_workouts AS (
                 SELECT 
@@ -434,6 +534,7 @@ class AnalyticsEngine:
             )
 
         # 2. Significant Progress
+        # Celebrates a >5% increase in load over the last 30 days.
         progress_query = f"""
             WITH exercise_range AS (
                 SELECT 
@@ -463,6 +564,7 @@ class AnalyticsEngine:
             pass
 
         # 3. High RPE Alert
+        # Warns of potential overtraining if average RPE is dangerously high (>9).
         rpe_query = f"""
             SELECT exercise, AVG(rpe) as avg_rpe
             FROM {table}
@@ -484,9 +586,10 @@ class AnalyticsEngine:
         except Exception:
             pass
 
+        # Limit findings to keep the UI clean.
         limit = 3 if exercise else 5
         return insights[:limit]
 
 
-# Singleton instance
+# Singleton instance shared across routers.
 analytics = AnalyticsEngine()

@@ -1,4 +1,13 @@
+/**
+ * DashboardView Component
+ *
+ * The primary interface for Biome. It visualizes training performance through
+ * interactive charts, aggregates high-level KPIs, and displays the current
+ * AI-generated training protocol.
+ */
+
 "use client";
+
 import React, { useState, useMemo } from "react";
 import {
     CartesianGrid,
@@ -17,16 +26,26 @@ import {
     History,
     TrendingUp,
     ClipboardList,
-    Plus
+    Plus,
+    Sparkles,
+    Info,
+    AlertTriangle,
+    CheckCircle2
 } from "lucide-react";
+
+// API & Hooks
 import type { WeeklyPlan, OverviewMetrics, TrendPoint, MemoryRecord, WorkoutInsight } from "@/lib/api";
 import { getTrend, getExercises, getExerciseStats, getInsights } from "@/lib/api";
 import { useAsyncData } from "../app/hooks/useAsyncData";
+
+// Specialized Components
 import { ExerciseSelector } from "./ExerciseSelector";
 import { WorkoutLogger } from "./WorkoutLogger";
-import { Sparkles, Info, AlertTriangle, CheckCircle2 } from "lucide-react";
 
-/** UTILS */
+/**
+ * formatNumber
+ * Utility to standardize numeric displays on the dashboard.
+ */
 function formatNumber(value: number | undefined, suffix?: string) {
     if (value === undefined || Number.isNaN(value)) return "—";
     const formatted = new Intl.NumberFormat("en-US", {
@@ -35,6 +54,10 @@ function formatNumber(value: number | undefined, suffix?: string) {
     return suffix ? `${formatted}${suffix}` : formatted;
 }
 
+/**
+ * formatDate
+ * Translates ISO strings into 'Month Day' format (e.g., Oct 23).
+ */
 function formatDate(input: string) {
     const date = new Date(input);
     if (Number.isNaN(date.getTime())) return input;
@@ -44,6 +67,10 @@ function formatDate(input: string) {
     }).format(date);
 }
 
+/**
+ * formatTime
+ * Translates timestamps into 'HH:MM' for the memory stream.
+ */
 function formatTime(input: string) {
     const date = new Date(input);
     if (Number.isNaN(date.getTime())) return input;
@@ -53,7 +80,10 @@ function formatTime(input: string) {
     }).format(date);
 }
 
-/** COMPONENTS */
+/**
+ * BentoCard Component
+ * A consistent wrapper for dashboard modules (Charts, Stats, Memory).
+ */
 function BentoCard({
     title,
     subtitle,
@@ -86,6 +116,10 @@ function BentoCard({
     );
 }
 
+/**
+ * StatCard Component
+ * Displays a single KPI with its label and trend indicator.
+ */
 function StatCard({ label, value, subvalue, trend }: { label: string; value: string; subvalue?: string; trend?: "up" | "down" | "neutral" }) {
     return (
         <div className="space-y-1">
@@ -100,13 +134,17 @@ function StatCard({ label, value, subvalue, trend }: { label: string; value: str
 }
 
 interface DashboardViewProps {
-    overview: OverviewMetrics | null;
-    trends: { volume: TrendPoint[]; frequency: TrendPoint[] } | null;
-    plan: WeeklyPlan | null;
-    memory: MemoryRecord[];
-    loading: boolean;
+    overview: OverviewMetrics | null; // Weekly aggregates
+    trends: { volume: TrendPoint[]; frequency: TrendPoint[] } | null; // Global trends
+    plan: WeeklyPlan | null; // Active workout protocol
+    memory: MemoryRecord[]; // Snapshot stream
+    loading: boolean; // Global loading state
 }
 
+/**
+ * InsightIcon Helper
+ * Returns the appropriate Lucide icon based on the insight severity/category.
+ */
 function InsightIcon({ type, category }: { type: WorkoutInsight['type'], category?: string }) {
     if (category === 'integrity') return <AlertTriangle className="h-4 w-4 text-rose-500 animate-pulse" />;
     switch (type) {
@@ -118,20 +156,27 @@ function InsightIcon({ type, category }: { type: WorkoutInsight['type'], categor
 }
 
 export function DashboardView({ overview, trends: globalTrends, plan, memory, loading: globalLoading }: DashboardViewProps) {
+    // State for filtering the entire dashboard by a single exercise.
     const [selectedExercise, setSelectedExercise] = useState<string | null>(null);
+    // State for triggering the 'Log Workout' modal.
     const [loggingExercise, setLoggingExercise] = useState<{ name: string, sets: number } | null>(null);
 
-    // Dynamic data fetching for the selected exercise
+    // Dynamic data fetching: Exercise metadata.
     const exerciseListState = useAsyncData(getExercises, []);
+
+    // Dynamic data fetching: Automated findings for the current selection.
     const insightsState = useAsyncData(
         () => getInsights(selectedExercise || undefined),
         [selectedExercise]
     );
+
+    // Dynamic data fetching: Specific statistics for the selected exercise.
     const exerciseStatsState = useAsyncData(
         () => selectedExercise ? getExerciseStats(selectedExercise) : Promise.resolve(null),
         [selectedExercise]
     );
 
+    // Dynamic data fetching: Time-series trends (Volume, RPE, Weight) for the selection.
     const exerciseTrendState = useAsyncData(
         async () => {
             if (!selectedExercise) return null;
@@ -145,12 +190,17 @@ export function DashboardView({ overview, trends: globalTrends, plan, memory, lo
         [selectedExercise]
     );
 
+    /**
+     * Memoized categorization of AI insights.
+     * Separates 'Data Integrity' issues (critical) from 'Performance' notes.
+     */
     const { integrityInsights, performanceInsights } = useMemo(() => {
         const integrity = (insightsState.data || []).filter(i => i.category === 'integrity');
         const performance = (insightsState.data || []).filter(i => i.category !== 'integrity');
         return { integrityInsights: integrity, performanceInsights: performance };
     }, [insightsState.data]);
 
+    // Handle initial loading state for the main dashboard.
     if (globalLoading && !selectedExercise) {
         return (
             <div className="flex h-96 items-center justify-center">
@@ -159,11 +209,13 @@ export function DashboardView({ overview, trends: globalTrends, plan, memory, lo
         );
     }
 
+    // Determine which dataset to visualize based on user selection.
     const currentTrends = selectedExercise ? exerciseTrendState.data : globalTrends;
     const stats = exerciseStatsState.data;
 
     return (
         <div className="max-w-7xl mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
+            {/* Modal: Manually log an exercise from the protocol list. */}
             {loggingExercise && (
                 <WorkoutLogger
                     exerciseName={loggingExercise.name}
@@ -172,7 +224,7 @@ export function DashboardView({ overview, trends: globalTrends, plan, memory, lo
                 />
             )}
 
-            {/* Header & Selector */}
+            {/* --- Dashboard Header --- */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div className="flex items-center gap-6">
                     <div>
@@ -180,7 +232,7 @@ export function DashboardView({ overview, trends: globalTrends, plan, memory, lo
                         <p className="text-sm text-white/40">Analyze your progress and get AI-powered insights</p>
                     </div>
 
-                    {/* Integrity Alert Banner (Header Location) */}
+                    {/* Critical Alert Banner: Flashes if data entry errors are detected. */}
                     {integrityInsights.length > 0 && (
                         <div className="hidden xl:flex items-center gap-3 rounded-2xl bg-rose-500/10 border border-rose-500/20 px-4 py-3 animate-pulse">
                             <AlertTriangle className="h-5 w-5 text-rose-500" />
@@ -194,13 +246,8 @@ export function DashboardView({ overview, trends: globalTrends, plan, memory, lo
                     )}
                 </div>
 
+                {/* Filter Controls */}
                 <div className="flex items-center gap-4">
-                    {/* Mobile/Tablet Integrity Alert */}
-                    {integrityInsights.length > 0 && (
-                        <div className="xl:hidden flex items-center justify-center h-10 w-10 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-500 animate-pulse" title={integrityInsights[0].message}>
-                            <AlertTriangle className="h-5 w-5" />
-                        </div>
-                    )}
                     <ExerciseSelector
                         exercises={exerciseListState.data || []}
                         selectedExercise={selectedExercise}
@@ -209,8 +256,9 @@ export function DashboardView({ overview, trends: globalTrends, plan, memory, lo
                 </div>
             </div>
 
-            {/* Top Stat Grid */}
+            {/* --- Top Stat Grid (4 columns) --- */}
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+                {/* Module 1: Activity/Frequency */}
                 <BentoCard title={selectedExercise ? "Exercise Reps" : "Activity"} headerIcon={Activity}>
                     <StatCard
                         label={selectedExercise ? "Total Sets" : "Frequency"}
@@ -218,6 +266,8 @@ export function DashboardView({ overview, trends: globalTrends, plan, memory, lo
                         subvalue={selectedExercise ? "Lifetime sets recorded" : "Sessions this week"}
                     />
                 </BentoCard>
+
+                {/* Module 2: Volume/Max Load */}
                 <BentoCard title={selectedExercise ? "Max load / Level" : "Volume"} headerIcon={BarChart2}>
                     <StatCard
                         label={selectedExercise ? (stats?.max_level ? "Best Level" : "Best Weight") : "Volume Load"}
@@ -230,6 +280,8 @@ export function DashboardView({ overview, trends: globalTrends, plan, memory, lo
                         trend="up"
                     />
                 </BentoCard>
+
+                {/* Module 3: Average Effort/Weak Points */}
                 <BentoCard title={selectedExercise ? "Avg Effort" : "Focus"} headerIcon={ClipboardList}>
                     <StatCard
                         label={selectedExercise ? "Average RPE" : "Active Blip"}
@@ -238,6 +290,7 @@ export function DashboardView({ overview, trends: globalTrends, plan, memory, lo
                     />
                 </BentoCard>
 
+                {/* Module 4: Performance Insights (Scrollable List) */}
                 <BentoCard title="Performance Insights" headerIcon={Sparkles} className="lg:col-span-1">
                     <div className="space-y-4 max-h-[120px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-white/10">
                         {performanceInsights.length === 0 && (
@@ -260,8 +313,9 @@ export function DashboardView({ overview, trends: globalTrends, plan, memory, lo
                 </BentoCard>
             </div>
 
+            {/* --- Main Chart & Memory Stream --- */}
             <div className="grid gap-6 lg:grid-cols-3">
-                {/* Main Trends Chart */}
+                {/* Progress Chart: Visualizes load velocity. */}
                 <BentoCard
                     title={selectedExercise ? `${selectedExercise} Progress` : "Volume Velocity"}
                     subtitle={selectedExercise ? "Weight and Volume trends" : "Load progression over time"}
@@ -298,8 +352,10 @@ export function DashboardView({ overview, trends: globalTrends, plan, memory, lo
                                     itemStyle={{ color: '#fff' }}
                                 />
                                 <Bar dataKey="value" yAxisId="volume" fill="url(#colorVolume)" radius={[4, 4, 0, 0]} barSize={20} name="Volume" />
+
                                 {selectedExercise && currentTrends && 'weight' in currentTrends && (
                                     <>
+                                        {/* Overlay lines for Max Weight and Average RPE for detailed exercise analysis. */}
                                         <Line
                                             yAxisId="weight"
                                             type="monotone"
@@ -331,7 +387,7 @@ export function DashboardView({ overview, trends: globalTrends, plan, memory, lo
                     </div>
                 </BentoCard>
 
-                {/* Memory Stream (Compact) */}
+                {/* Signals Stream: Compact view of long-term memory updates. */}
                 <BentoCard title="Recent Signals" headerIcon={History}>
                     <div className="space-y-4">
                         {memory.slice(0, 5).map((m, i) => (
@@ -354,7 +410,7 @@ export function DashboardView({ overview, trends: globalTrends, plan, memory, lo
                 </BentoCard>
             </div>
 
-            {/* Plan Section */}
+            {/* --- Training Plan Section --- */}
             <BentoCard title="Current Protocol" subtitle={plan?.goal || "Analyzing protocol..."} headerIcon={Calendar}>
                 {!plan ? (
                     <div className="flex flex-col items-center justify-center py-12">
@@ -382,6 +438,7 @@ export function DashboardView({ overview, trends: globalTrends, plan, memory, lo
                                                     <span className="text-[10px] font-medium text-white/30 uppercase">{ex.target_reps} reps</span>
                                                 </div>
                                             </div>
+                                            {/* Quick-log button for each exercise in the plan. */}
                                             <button
                                                 onClick={(e) => {
                                                     e.stopPropagation();
