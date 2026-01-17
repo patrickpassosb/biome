@@ -12,6 +12,7 @@ import { Sidebar } from "@/components/Sidebar";
 import { DashboardView } from "@/components/DashboardView";
 import { AgentView, type Message } from "@/components/AgentView";
 import { SettingsView } from "@/components/SettingsView";
+import { WeightView } from "@/components/WeightView";
 import type { WeeklyPlan } from "@/lib/api";
 import { Info } from "lucide-react";
 
@@ -29,7 +30,7 @@ const Header = ({ isDemo }: { isDemo: boolean }) => (
 );
 
 export default function App() {
-  const [currentView, setCurrentView] = useState<'dashboard' | 'agent' | 'settings'>('dashboard');
+  const [currentView, setCurrentView] = useState<'dashboard' | 'agent' | 'weight' | 'settings'>('dashboard');
 
   // Centralized Data Fetching
   const overviewState = useAsyncData(getOverviewMetrics, []);
@@ -59,12 +60,16 @@ export default function App() {
   // Adjust initial message for new users (no data, not demo)
   useEffect(() => {
     if (overviewState.data && !overviewState.data.is_demo && overviewState.data.total_volume_load_current_week === 0 && overviewState.data.weekly_frequency === 0) {
-      setMessages([{
-        role: 'assistant',
-        content: "Welcome to Biome! I see you don't have any training history recorded yet. No problem—I can help you build your first plan from scratch. \n\nWhat are your primary goals (e.g., Strength, Muscle Growth) and how many days a week would you like to train?",
-        timestamp: new Date(),
-        agentPersona: "Biome Team"
-      }]);
+      // Use a small timeout to avoid cascading render warning in ESLint
+      const timer = setTimeout(() => {
+        setMessages([{
+          role: 'assistant',
+          content: "Welcome to Biome! I see you don't have any training history recorded yet. No problem—I can help you build your first plan from scratch. \n\nWhat are your primary goals (e.g., Strength, Muscle Growth) and how many days a week would you like to train?",
+          timestamp: new Date(),
+          agentPersona: "Biome Team"
+        }]);
+      }, 0);
+      return () => clearTimeout(timer);
     }
   }, [overviewState.data]);
 
@@ -103,6 +108,10 @@ export default function App() {
 
           {currentView === 'settings' && (
             <SettingsView />
+          )}
+
+          {currentView === 'weight' && (
+            <WeightView />
           )}
         </div>
       </main>

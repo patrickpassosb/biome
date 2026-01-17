@@ -10,6 +10,7 @@ import type {
   ExerciseStats,
   WorkoutInsight,
   WorkoutLogEntry,
+  WeightEntry,
 } from "./types";
 
 export type {
@@ -24,6 +25,7 @@ export type {
   WorkoutInsight,
   ExerciseStats,
   WorkoutLogEntry,
+  WeightEntry,
 };
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
@@ -116,15 +118,15 @@ export function toggleDemoMode(enabled: boolean) {
 export function importUserData(file: File) {
   const formData = new FormData();
   formData.append("file", file);
-  
+
   // Custom fetch because fetchJson assumes JSON body/headers
   return fetch(`${API_BASE_URL}/data/import`, {
     method: "POST",
     body: formData,
   }).then(async (res) => {
     if (!res.ok) {
-        const txt = await res.text();
-        throw new Error(txt || "Import failed");
+      const txt = await res.text();
+      throw new Error(txt || "Import failed");
     }
     return res.json();
   });
@@ -135,4 +137,15 @@ export function logWorkout(entry: WorkoutLogEntry) {
     method: "POST",
     body: JSON.stringify(entry),
   });
+}
+
+export function logWeight(weight_kg: number, date: string) {
+  return fetchJson<{ status: string }>("/metrics/weight", {
+    method: "POST",
+    body: JSON.stringify({ weight_kg, date }),
+  });
+}
+
+export function getWeightHistory() {
+  return fetchJson<WeightEntry[]>("/metrics/weight/history");
 }

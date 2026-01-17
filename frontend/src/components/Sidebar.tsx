@@ -1,14 +1,15 @@
-import { LayoutGrid, Sparkles, Settings } from "lucide-react";
+import { LayoutGrid, Sparkles, Settings, Activity } from "lucide-react";
 
 interface SidebarProps {
-    currentView: 'dashboard' | 'agent' | 'settings';
-    onViewChange: (view: 'dashboard' | 'agent' | 'settings') => void;
+    currentView: 'dashboard' | 'agent' | 'weight' | 'settings';
+    onViewChange: (view: 'dashboard' | 'agent' | 'weight' | 'settings') => void;
 }
 
 export function Sidebar({ currentView, onViewChange }: SidebarProps) {
     const menuItems = [
         { id: 'dashboard', label: 'Dashboard', icon: LayoutGrid },
         { id: 'agent', label: 'Agents', icon: Sparkles },
+        { id: 'weight', label: 'Weight', icon: Activity },
         { id: 'settings', label: 'Settings', icon: Settings },
     ] as const;
 

@@ -113,3 +113,7 @@ class WorkoutInsight(BaseModel):
     category: str # "stagnation", "progress", "fatigue", etc.
     exercise: Optional[str] = None
     message: str
+
+class WeightEntry(BaseModel):
+    date: date
+    weight_kg: float

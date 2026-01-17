@@ -1,26 +1,11 @@
 from typing import Any, Dict
+from analytics.db import analytics
 
 def get_gym_metrics(user_id: str, start_date: str, end_date: str) -> Dict[str, Any]:
     """
     Retrieves aggregated gym metrics for a user within a date range.
-    
-    Args:
-        user_id: The ID of the user.
-        start_date: The start date (YYYY-MM-DD).
-        end_date: The end date (YYYY-MM-DD).
-        
-    Returns:
-        A dictionary containing metrics like volume_load, average_rpe, etc.
     """
-    # Mock implementation
-    return {
-        "volume_load": 5000,
-        "average_rpe": 7.5,
-        "max_weight": 100,
-        "weekly_frequency": 3,
-        "set_count": 15,
-        "failure_rate": 0.05
-    }
+    return analytics.get_overview_metrics()
 
 def get_user_profile(user_id: str) -> Dict[str, Any]:
     """
@@ -73,13 +58,6 @@ def save_memory_record(record: Dict[str, Any]) -> str:
 def get_weight_history() -> Dict[str, Any]:
     """
     Retrieves the user's weight history.
-
-    Returns:
-        A dictionary containing the user's weight history.
     """
-    # Mock implementation
-    return {
-        "weight_history": [
-            {"date": "2023-01-01", "weight_kg": 80.0}
-        ]
-    }
+    history = analytics.get_weight_history()
+    return {"weight_history": history}

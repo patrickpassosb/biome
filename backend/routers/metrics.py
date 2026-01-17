@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Query
 from typing import List, Optional
-from models import MetricsOverview, TrendPoint, ExerciseStats, WorkoutInsight
+from models import MetricsOverview, TrendPoint, ExerciseStats, WorkoutInsight, WeightEntry
 from analytics.db import analytics
 
 router = APIRouter(prefix="/metrics", tags=["Metrics"])
@@ -28,3 +28,12 @@ async def get_exercise_stats(exercise_name: str):
 @router.get("/insights", response_model=List[WorkoutInsight])
 async def get_insights(exercise: Optional[str] = Query(None)):
     return await analytics.get_automated_insights(exercise)
+
+@router.post("/weight")
+async def log_weight(entry: WeightEntry):
+    analytics.log_weight(entry.date, entry.weight_kg)
+    return {"status": "success"}
+
+@router.get("/weight/history", response_model=List[WeightEntry])
+async def get_weight_history():
+    return analytics.get_weight_history()

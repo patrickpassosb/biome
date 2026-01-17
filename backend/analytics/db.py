@@ -59,6 +59,14 @@ class AnalyticsEngine:
                 notes VARCHAR
             );
         """)
+
+        # 3. Weight History Table
+        self.con.execute("""
+            CREATE TABLE IF NOT EXISTS weight_history (
+                date DATE PRIMARY KEY,
+                weight_kg DOUBLE
+            );
+        """)
         
         # Load Initial Data
         if os.path.exists(CSV_PATH):
@@ -107,6 +115,21 @@ class AnalyticsEngine:
             entry.set_number, entry.reps, entry.weight_kg, 
             entry.rpe, entry.notes
         ])
+
+    def log_weight(self, date_val: date, weight_kg: float):
+        """Logs weight for a specific date, overwriting if exists."""
+        query = """
+            INSERT INTO weight_history (date, weight_kg)
+            VALUES (?, ?)
+            ON CONFLICT (date) DO UPDATE SET weight_kg = EXCLUDED.weight_kg
+        """
+        self.con.execute(query, [date_val, weight_kg])
+
+    def get_weight_history(self) -> List[Dict[str, Any]]:
+        """Returns weight history ordered by date."""
+        query = "SELECT date, weight_kg FROM weight_history ORDER BY date ASC"
+        results = self.con.execute(query).fetchall()
+        return [{"date": str(r[0]), "weight_kg": r[1]} for r in results]
 
     def get_latest_date(self) -> date:
         res = self.con.execute(f"SELECT MAX(date) FROM {self.active_table}").fetchone()

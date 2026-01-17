@@ -29,7 +29,7 @@ export function SettingsView() {
             setImportMsg("Data imported successfully!");
             // Give user a moment to see success before reload
             setTimeout(() => window.location.reload(), 1500);
-        } catch (e) {
+        } catch {
             setImportMsg("Import failed. Check CSV format.");
         } finally {
             setUploading(false);
@@ -49,28 +49,26 @@ export function SettingsView() {
                     <h3 className="text-xl font-semibold text-white mb-4 flex items-center gap-2">
                         <Database className="w-5 h-5" /> Data Management
                     </h3>
-                    
+
                     <div className="space-y-6">
                         {/* Demo Mode Toggle */}
                         <div className="flex items-center justify-between p-4 rounded-xl bg-white/5 border border-white/5">
                             <div>
                                 <p className="text-white font-medium flex items-center gap-2">
-                                    <Activity className="w-4 h-4 text-emerald-400" /> 
+                                    <Activity className="w-4 h-4 text-emerald-400" />
                                     Demo Mode
                                 </p>
                                 <p className="text-sm text-[color:var(--muted-foreground)]">
                                     Populate dashboard with sample data to explore features.
                                 </p>
                             </div>
-                            <button 
+                            <button
                                 onClick={handleDemoToggle}
-                                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                                    isDemo ? 'bg-emerald-500' : 'bg-white/20'
-                                }`}
+                                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${isDemo ? 'bg-emerald-500' : 'bg-white/20'
+                                    }`}
                             >
-                                <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                                    isDemo ? 'translate-x-6' : 'translate-x-1'
-                                }`} />
+                                <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${isDemo ? 'translate-x-6' : 'translate-x-1'
+                                    }`} />
                             </button>
                         </div>
 
@@ -78,7 +76,7 @@ export function SettingsView() {
                         <div className="flex items-center justify-between p-4 rounded-xl bg-white/5 border border-white/5">
                             <div>
                                 <p className="text-white font-medium flex items-center gap-2">
-                                    <Upload className="w-4 h-4 text-blue-400" /> 
+                                    <Upload className="w-4 h-4 text-blue-400" />
                                     Import History
                                 </p>
                                 <p className="text-sm text-[color:var(--muted-foreground)]">
