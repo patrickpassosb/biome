@@ -1,13 +1,11 @@
 from fastapi import APIRouter
 from models import ChatRequest, ChatResponse
-# from agent.core import agent
 from app.agents.orchestrator import coordinator_agent as agent
-
-router = APIRouter(prefix="/agent", tags=["Agent"])
-
 from google.adk.runners import Runner
 from google.adk.sessions import InMemorySessionService
 from google.genai import types
+
+router = APIRouter(prefix="/agent", tags=["Agent"])
 
 # --- Agent Runner Setup ---
 # A persistent session for the user to maintain conversation history.

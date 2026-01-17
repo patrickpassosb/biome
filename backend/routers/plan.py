@@ -1,13 +1,13 @@
+import json
 from fastapi import APIRouter
 from models import WeeklyPlan, RevisePlanRequest, PlanValidationResult
 from app.agents.orchestrator import coordinator_agent as agent
-
-router = APIRouter(prefix="/plan", tags=["Plan"])
-
-import json
+from app.agents.validator import validator_agent
 from google.adk.runners import Runner
 from google.adk.sessions import InMemorySessionService
 from google.genai import types
+
+router = APIRouter(prefix="/plan", tags=["Plan"])
 
 @router.post("/propose", response_model=WeeklyPlan)
 async def propose_plan():
@@ -70,9 +70,6 @@ async def revise_plan(request: RevisePlanRequest):
 
     # Fallback to returning the original plan if revision fails
     return request.current_plan
-
-from models import PlanValidationResult
-from app.agents.validator import validator_agent
 
 @router.post("/validate", response_model=PlanValidationResult)
 async def validate_plan(plan: WeeklyPlan):

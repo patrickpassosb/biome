@@ -1,4 +1,3 @@
-from unittest.mock import MagicMock, patch
 from google.adk.events import Event
 from google.genai.types import Content, Part
 

@@ -384,7 +384,7 @@ class AnalyticsEngine:
                     "exercise": p[0],
                     "message": f"Solid progress on {p[0]}! You've increased your load recently."
                 })
-        except:
+        except Exception:
              pass
 
         # 3. High RPE Alert
@@ -404,7 +404,7 @@ class AnalyticsEngine:
                     "exercise": h[0],
                     "message": f"Intensity alert for {h[0]} (Avg RPE {h[1]:.1f}). Consider a deload."
                 })
-        except:
+        except Exception:
             pass
 
         limit = 3 if exercise else 5
