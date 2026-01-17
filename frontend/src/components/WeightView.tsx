@@ -9,9 +9,9 @@ import {
     Tooltip,
     ResponsiveContainer,
 } from "recharts";
-import { Scale, Plus, Calendar, History, TrendingDown, TrendingUp } from "lucide-react";
+import { Scale, Plus, History, TrendingDown, TrendingUp } from "lucide-react";
 import { useAsyncData } from "../app/hooks/useAsyncData";
-import { getWeightHistory, logWeight, type WeightEntry } from "@/lib/api";
+import { getWeightHistory, logWeight } from "@/lib/api";
 
 function formatDate(input: string) {
     const date = new Date(input);

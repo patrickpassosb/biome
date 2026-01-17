@@ -60,12 +60,16 @@ export default function App() {
   // Adjust initial message for new users (no data, not demo)
   useEffect(() => {
     if (overviewState.data && !overviewState.data.is_demo && overviewState.data.total_volume_load_current_week === 0 && overviewState.data.weekly_frequency === 0) {
-      setMessages([{
-        role: 'assistant',
-        content: "Welcome to Biome! I see you don't have any training history recorded yet. No problem—I can help you build your first plan from scratch. \n\nWhat are your primary goals (e.g., Strength, Muscle Growth) and how many days a week would you like to train?",
-        timestamp: new Date(),
-        agentPersona: "Biome Team"
-      }]);
+      // Use a small timeout to avoid cascading render warning in ESLint
+      const timer = setTimeout(() => {
+        setMessages([{
+          role: 'assistant',
+          content: "Welcome to Biome! I see you don't have any training history recorded yet. No problem—I can help you build your first plan from scratch. \n\nWhat are your primary goals (e.g., Strength, Muscle Growth) and how many days a week would you like to train?",
+          timestamp: new Date(),
+          agentPersona: "Biome Team"
+        }]);
+      }, 0);
+      return () => clearTimeout(timer);
     }
   }, [overviewState.data]);
 
