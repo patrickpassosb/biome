@@ -12,6 +12,7 @@ import { Sidebar } from "@/components/Sidebar";
 import { DashboardView } from "@/components/DashboardView";
 import { AgentView, type Message } from "@/components/AgentView";
 import { SettingsView } from "@/components/SettingsView";
+import { WeightView } from "@/components/WeightView";
 import type { WeeklyPlan } from "@/lib/api";
 import { Info } from "lucide-react";
 
@@ -29,7 +30,7 @@ const Header = ({ isDemo }: { isDemo: boolean }) => (
 );
 
 export default function App() {
-  const [currentView, setCurrentView] = useState<'dashboard' | 'agent' | 'settings'>('dashboard');
+  const [currentView, setCurrentView] = useState<'dashboard' | 'agent' | 'weight' | 'settings'>('dashboard');
 
   // Centralized Data Fetching
   const overviewState = useAsyncData(getOverviewMetrics, []);
@@ -103,6 +104,10 @@ export default function App() {
 
           {currentView === 'settings' && (
             <SettingsView />
+          )}
+
+          {currentView === 'weight' && (
+            <WeightView />
           )}
         </div>
       </main>

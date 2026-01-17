@@ -35,10 +35,12 @@ class BiomeTeam:
         metrics = analytics.get_overview_metrics()
         history = analytics.get_recent_history(limit=30)
         progression = analytics.get_progression_analysis()
+        weight_history = analytics.get_weight_history()
         return (
             f"Current Metrics: {json.dumps(metrics)}\n"
             f"Recent Training History (Last 30 sets): {json.dumps(history)}\n"
-            f"Progression & Trend Analysis: {json.dumps(progression)}"
+            f"Progression & Trend Analysis: {json.dumps(progression)}\n"
+            f"Weight History (Evolution): {json.dumps(weight_history)}"
         )
 
     def chat(self, request: ChatRequest) -> ChatResponse:

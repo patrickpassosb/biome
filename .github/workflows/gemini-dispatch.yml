@@ -1,5 +1,8 @@
 name: '🔀 Gemini Dispatch'
 
+env:
+  GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+
 on:
   pull_request_review_comment:
     types:

@@ -1,5 +1,8 @@
 name: '🔀 Gemini Triage'
 
+env:
+  GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+
 on:
   workflow_call:
     inputs:

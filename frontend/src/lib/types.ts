@@ -114,3 +114,8 @@ export type WorkoutLogEntry = {
   rpe?: number;
   notes?: string;
 };
+
+export type WeightEntry = {
+  date: string;
+  weight_kg: number;
+};

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 type AsyncState<T> = {
   data: T | null;
@@ -17,6 +17,9 @@ export function useAsyncData<T>(
     error: null,
     loading: true,
   });
+
+  const [tick, setTick] = useState(0);
+  const refresh = useCallback(() => setTick((t) => t + 1), []);
 
   useEffect(() => {
     let active = true;
@@ -43,7 +46,7 @@ export function useAsyncData<T>(
       active = false;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, deps);
+  }, [...deps, tick]);
 
-  return state;
+  return { ...state, refresh };
 }

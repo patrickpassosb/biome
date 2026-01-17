@@ -36,6 +36,9 @@ def mock_analytics():
             "top_progressions": [],
             "recent_workout_summaries": []
         }
+        mock.get_weight_history.return_value = [
+            {"date": "2023-01-01", "weight_kg": 80.0}
+        ]
         yield mock
 
 @pytest.fixture
