@@ -11,6 +11,13 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from fastapi.testclient import TestClient
 
+@pytest.fixture(autouse=True)
+def clean_db():
+    from analytics.db import analytics
+    analytics.con.execute("DELETE FROM training_history")
+    analytics.con.execute("DELETE FROM demo_training_history")
+    analytics.con.execute("DELETE FROM weight_history")
+    yield
 @pytest.fixture
 def client():
     from main import app

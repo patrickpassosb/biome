@@ -25,6 +25,8 @@ def test_get_overview_metrics():
     assert metrics["active_weak_points_count"] == 1
 
 def test_get_trends_volume():
+    # Insert data so there's something to trend
+    analytics.con.execute("INSERT INTO training_history (date, weight_kg, reps) VALUES ('2023-01-01', 50, 10)")
     trends = analytics.get_trends("volume_load")
     assert len(trends) >= 1
     assert trends[0].value > 0
