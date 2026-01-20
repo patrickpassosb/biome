@@ -6,16 +6,80 @@ initial plans, revise them via chat feedback, and validate their safety.
 It uses stateless ADK sessions to ensure high availability.
 """
 
+import asyncio
 import json
+import logging
+from typing import Optional
+
 from fastapi import APIRouter
-from models import WeeklyPlan, RevisePlanRequest, PlanValidationResult
-from app.agents.orchestrator import coordinator_agent as agent
-from app.agents.validator import validator_agent
+from google.adk.agents import LlmAgent
 from google.adk.runners import Runner
 from google.adk.sessions import InMemorySessionService
-from google.genai import types
+from google.genai import errors, types
+
+from app.agents.config import APP_NAME, USER_ID, LLM_ENABLED
+from app.agents.providers import PROVIDER_AGENTS
+from app.agents.runner_utils import collect_final_text
+from models import WeeklyPlan, RevisePlanRequest, PlanValidationResult
 
 router = APIRouter(prefix="/plan", tags=["Plan"])
+logger = logging.getLogger(__name__)
+RUN_TIMEOUT_SECONDS = 20
+
+
+async def _run_with_provider(
+    agent: LlmAgent,
+    session_id: str,
+    prompt: str,
+) -> Optional[str]:
+    session_service = InMemorySessionService()
+    runner = Runner(agent=agent, app_name=APP_NAME, session_service=session_service)
+    await session_service.create_session(
+        app_name=APP_NAME, user_id=USER_ID, session_id=session_id
+    )
+    content = types.Content(role="user", parts=[types.Part(text=prompt)])
+    return await asyncio.wait_for(
+        collect_final_text(
+            runner,
+            user_id=USER_ID,
+            session_id=session_id,
+            content=content,
+        ),
+        timeout=RUN_TIMEOUT_SECONDS,
+    )
+
+
+async def _run_with_fallback(
+    prompt: str,
+    session_id_prefix: str,
+    use_validator: bool,
+) -> Optional[str]:
+    for provider in PROVIDER_AGENTS:
+        agent = provider.validator if use_validator else provider.coordinator
+        session_id = f"{session_id_prefix}_{provider.name}"
+        try:
+            response = await _run_with_provider(agent, session_id, prompt)
+            if response:
+                return response
+        except asyncio.TimeoutError:
+            logger.exception(
+                "Plan run timed out after %ss (provider=%s)",
+                RUN_TIMEOUT_SECONDS,
+                provider.name,
+            )
+        except errors.APIError as err:
+            logger.exception(
+                "Plan run failed (provider=%s)",
+                provider.name,
+                exc_info=err,
+            )
+        except Exception as err:
+            logger.exception(
+                "Plan run failed (provider=%s)",
+                provider.name,
+                exc_info=err,
+            )
+    return None
 
 
 @router.post("/propose", response_model=WeeklyPlan)
@@ -25,42 +89,30 @@ async def propose_plan():
 
     Flow: Coordinator -> Analyst (Data Check) -> Coach (Plan Draft) -> Return.
     """
-    # Create a fresh, single-turn session for the proposal.
-    session_service = InMemorySessionService()
-    runner = Runner(
-        agent=agent, app_name="biome_agent_plan", session_service=session_service
-    )
-    session_id = "plan_proposal_session"
-    await session_service.create_session(
-        app_name="biome_agent_plan", user_id="test_user", session_id=session_id
-    )
-
+    if not LLM_ENABLED or not PROVIDER_AGENTS:
+        return WeeklyPlan(
+            week_start_date="2023-01-01",
+            goal="AI plan generation is disabled (set AGENT_ENABLE_LLM=1 with a billed Gemini API key).",
+            workouts=[],
+        )
     prompt = "Propose a new weekly training plan based on the user's data."
-    content = types.Content(role="user", parts=[types.Part(text=prompt)])
 
-    # The runner executes the Head Coach Manager agent and its sub-agents.
-    events = runner.run(user_id="test_user", session_id=session_id, new_message=content)
-
-    final_response = None
-    for event in events:
-        if event.is_final_response() and event.content and event.content.parts:
-            final_response = event.content.parts[0].text.strip()
+    final_response = await _run_with_fallback(
+        prompt=prompt,
+        session_id_prefix="plan_proposal_session",
+        use_validator=False,
+    )
 
     if final_response:
         try:
-            # Parse the LLM's raw text response into the WeeklyPlan model.
             plan_dict = json.loads(final_response)
             return WeeklyPlan(**plan_dict)
         except (json.JSONDecodeError, TypeError):
-            # Fallback handled below if parsing fails.
             pass
 
     # Fallback or error response if the AI fails to produce a valid schema.
-    return WeeklyPlan(
-        week_start_date="2023-01-01",
-        goal="Error: Could not generate plan.",
-        workouts=[],
-    )
+    failure_reason = final_response or "Error: Could not generate plan."
+    return WeeklyPlan(week_start_date="2023-01-01", goal=failure_reason, workouts=[])
 
 
 @router.post("/revise", response_model=WeeklyPlan)
@@ -70,28 +122,19 @@ async def revise_plan(request: RevisePlanRequest):
 
     Example feedback: 'I have a sore shoulder, replace bench press with flyes.'
     """
-    session_service = InMemorySessionService()
-    runner = Runner(
-        agent=agent, app_name="biome_agent_revise", session_service=session_service
-    )
-    session_id = "plan_revision_session"
-    await session_service.create_session(
-        app_name="biome_agent_revise", user_id="test_user", session_id=session_id
-    )
+    if not LLM_ENABLED or not PROVIDER_AGENTS:
+        return request.current_plan
 
     # Injected state into the prompt to provide context to the agent.
     prompt = (
         f"Revise the following weekly training plan based on this feedback: '{request.feedback}'.\n\n"
         f"Current Plan:\n{request.current_plan.model_dump_json()}"
     )
-    content = types.Content(role="user", parts=[types.Part(text=prompt)])
-
-    events = runner.run(user_id="test_user", session_id=session_id, new_message=content)
-
-    final_response = None
-    for event in events:
-        if event.is_final_response() and event.content and event.content.parts:
-            final_response = event.content.parts[0].text.strip()
+    final_response = await _run_with_fallback(
+        prompt=prompt,
+        session_id_prefix="plan_revision_session",
+        use_validator=False,
+    )
 
     if final_response:
         try:
@@ -109,28 +152,19 @@ async def validate_plan(plan: WeeklyPlan):
     """
     Invokes the Validator Agent to perform a safety audit on a training protocol.
     """
-    session_service = InMemorySessionService()
-    runner = Runner(
-        agent=validator_agent,
-        app_name="biome_agent_validate",
-        session_service=session_service,
+    if not LLM_ENABLED or not PROVIDER_AGENTS:
+        return PlanValidationResult(
+            valid=False,
+            issues=[
+                "Validation unavailable: enable AGENT_ENABLE_LLM=1 with a billed Gemini API key."
+            ],
+        )
+    prompt = plan.model_dump_json()
+    final_response = await _run_with_fallback(
+        prompt=prompt,
+        session_id_prefix="plan_validation_session",
+        use_validator=True,
     )
-    session_id = "plan_validation_session"
-    await session_service.create_session(
-        app_name="biome_agent_validate", user_id="test_user", session_id=session_id
-    )
-
-    # Send the plan as JSON to the validator for analysis.
-    content = types.Content(
-        role="user", parts=[types.Part(text=plan.model_dump_json())]
-    )
-
-    events = runner.run(user_id="test_user", session_id=session_id, new_message=content)
-
-    final_response = None
-    for event in events:
-        if event.is_final_response() and event.content and event.content.parts:
-            final_response = event.content.parts[0].text.strip()
 
     if final_response:
         try:
@@ -139,4 +173,7 @@ async def validate_plan(plan: WeeklyPlan):
         except (json.JSONDecodeError, TypeError):
             pass
 
-    return PlanValidationResult(valid=False, issues=["Error: Could not validate plan."])
+    failure_issue = (
+        final_response or "Error: Could not validate plan due to an internal error."
+    )
+    return PlanValidationResult(valid=False, issues=[failure_issue])

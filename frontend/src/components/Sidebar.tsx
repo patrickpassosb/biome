@@ -24,7 +24,7 @@ export function Sidebar({ currentView, onViewChange }: SidebarProps) {
         { id: 'dashboard', label: 'Dashboard', icon: LayoutGrid },
         { id: 'agent', label: 'Agents', icon: Sparkles },
         { id: 'weight', label: 'Weight', icon: Activity },
-        { id: 'settings', label: 'Settings', icon: Settings },
+        { id: 'settings', label: 'Profile', icon: Settings },
     ] as const;
 
     return (

@@ -28,6 +28,6 @@ EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
-# Use the standalone server
-CMD ["node", "server.js"]
-
+# Use Next.js production server.
+# Context7: https://github.com/vercel/next.js/blob/canary/docs/01-app/03-api-reference/06-cli/next.mdx
+CMD ["npm", "run", "start"]

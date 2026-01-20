@@ -9,7 +9,6 @@ Non-optional rules to ensure: documented assumptions, structured planning, and c
 ## 1) Mandatory Context7
 
 Agent MUST use Context7 MCP for:
-
 * Code generation
 * Setup/config steps
 * Library/framework/API/SDK usage
@@ -18,55 +17,96 @@ Agent MUST use Context7 MCP for:
 * Any "how to use X" documentation
 
 Rules:
-
 * Never rely on memory for library/API behavior.
 * Resolve library ID + fetch docs via Context7 before implementation.
 
 **Fallback Strategy (If Context7 Unavailable):**
-
 1. Notify user: "Context7 unavailable, using [fallback method]"
-2. Attempt web search for official docs (see Section 6)
+2. Attempt web search for official docs (see Section 7)
 3. If both fail: stop and request user guidance
-
-**Verification After Context7:**
-
-* Cross-check returned docs against implementation
-* Cite the specific Context7 source in code comments
-* Note any API version constraints discovered
 
 ---
 
-## 2) Mandatory Tasks (Based on `ai_task_template_skeleton.md`)
+## 2) Build, Lint, Test Commands
+
+### Backend (Python - FastAPI)
+```bash
+cd backend
+uv run pytest                           # Run all tests
+uv run pytest tests/test_main.py        # Run single test file
+uv run pytest tests/test_main.py::test_root_endpoint  # Single test
+uv run pytest --cov=. --cov-report=term-missing  # Coverage (80% min)
+uv run ruff check                       # Lint
+uv run ruff check --fix                 # Auto-fix
+uv run ruff format                       # Format
+./dev.sh                                 # Dev server
+```
+
+### Frontend (Next.js - TypeScript)
+```bash
+cd frontend
+npm test                                 # Run unit tests
+npm test WorkoutLogger.test.tsx         # Run single test file
+npx vitest run --testNamePattern "logs workout"  # By pattern
+npm run test:coverage                    # Coverage report
+npm run test:e2e                         # E2E tests (Playwright)
+npm run lint                             # Lint
+npm run build                            # Build
+npm run dev                              # Dev server
+```
+
+---
+
+## 3) Code Style Guidelines
+
+### Python (Backend)
+* **Imports**: Group standard library, third-party, local. Use `from x import y`, avoid `*` imports.
+* **Formatting**: Use `ruff format` (PEP 8). No manual formatting.
+* **Types**: Use Pydantic models for API request/response. Use `typing` module (`List`, `Optional`, `Literal`, `Dict`, `Any`).
+* **Naming**: `snake_case` for functions/variables, `PascalCase` for classes. Router functions: `get_overview_metrics()`, `create_weekly_plan()`.
+* **Error Handling**: Raise `HTTPException` for API errors. Use specific exceptions in business logic. Never bare `except:`.
+* **Docstrings**: Google-style with description, args, returns, raises.
+* **Constants**: `UPPER_SNAKE_CASE` for module-level constants.
+* **Comments**: No inline comments unless explaining complex logic. Use Context7 citations.
+
+### TypeScript (Frontend)
+* **Imports**: Use `import type { ... }` for type-only imports. Group third-party, then `@/` path alias.
+* **Formatting**: ESLint with `eslint-config-next`. No manual formatting.
+* **Types**: Strict TypeScript. Define interfaces in `types.ts` or inline for props. Avoid `any` - use `unknown` or specific types.
+* **Naming**: `camelCase` for functions/variables, `PascalCase` for components/interfaces. Handlers: `handleXxx()`, `onXxx()`.
+* **Error Handling**: Always check `response.ok` in fetch. Throw descriptive `Error` objects. Use try/catch for async.
+* **Components**: Functional components with hooks. Interfaces: `ComponentNameProps`.
+* **Comments**: No JSDoc unless public API. Use Context7 citations.
+* **Async**: Use `async/await` over `.then()`. Prefer `useAsyncData` pattern.
+
+### General
+* **File Size**: Keep under 500 lines. Extract to modules when exceeded.
+* **Commit Messages**: Conventional commits: `feat:`, `fix:`, `refactor:`, `test:`.
+* **No Emojis**: Never use emojis in code/comments unless requested.
+
+---
+
+## 4) Mandatory Tasks (Based on `ai_task_template_skeleton.md`)
 
 For any work beyond trivial Q&A, Agent MUST operate from a task file created **from** `.agent/tasks/ai_task_template_skeleton.md`.
 
 Rules:
-
 * **Never modify `ai_task_template_skeleton.md`.** Only copy it to create a task.
 * **Reuse an existing task** if it already covers the request.
-* If a task exists but needs small changes, **edit the existing task** instead of creating a new one.
+* If a task exists but needs small changes, **edit the existing task** instead of creating a new task.
 * Create a new task only when no existing task fits.
 
 ### Task Enumeration Rules
-
-* All tasks MUST be explicitly numbered:
-
-  * Task 1, Task 2, Task 3, …
-* When creating a new task:
-
-  * Determine the **highest existing task number**
-  * Create the next task sequentially (e.g., after Task 3 → create Task 4)
+* All tasks MUST be explicitly numbered: Task 1, Task 2, Task 3, …
+* When creating a new task: Determine the **highest existing task number** and create the next sequentially (e.g., after Task 3 → create Task 4)
 * Task numbers must never be reused or skipped.
-* The task title must include its number (e.g., `Task 4 – Backend Analytics Pipeline`).
-
-This ensures linear project history and prevents task collisions.
+* Task title must include its number (e.g., `Task 4 – Backend Analytics Pipeline`).
 
 ---
 
-## 3) Task-First Flow (Minimal)
+## 5) Task-First Flow (Minimal)
 
 When doing work:
-
 1. Choose an existing relevant task, or create one from the template copy.
 2. Define/confirm success criteria inside the task.
 3. Use Context7 for any code/config/docs needs.
@@ -75,70 +115,23 @@ When doing work:
 
 ---
 
-## 4) Fix Root Causes
+## 6) Fix Root Causes
 
 Prefer durable fixes over symptom-masking:
-
-* Don’t silence errors or add hacks.
+* Don't silence errors or add hacks.
 * Diagnose and address the underlying cause.
 
 ---
 
-## 5) Task Reuse & Modification Policy
+## 7) External Context & Web Retrieval
 
-* If an existing task fully or partially covers the current request, Agent MUST reuse it.
-* If the task is mostly correct but incomplete or outdated, Agent MUST update the existing task.
-* Create a new task ONLY when:
-
-  * The goal is materially different, or
-  * Success criteria no longer overlap, or
-  * The scope would cause confusion if merged.
-
-Agent must prefer task modification over task duplication to conserve tokens and maintain continuity.
+If information is required that is **not available via Context7**, Agent MAY retrieve external context using Firecrawl MCP to scrape official documentation. Limit scraping to information required for the task. Clearly state when Firecrawl is being used and summarize retrieved data succinctly.
 
 ---
 
-## 6) External Context & Web Retrieval
+## 8) Mandatory Clarification & Question-Asking
 
-If information is required that is **not available via Context7**, the Agent MAY retrieve external context using:
-
-### Firecrawl MCP Server (Preferred)
-
-* Use **Firecrawl MCP** to scrape official documentation, specs, or authoritative sources.
-* Limit scraping strictly to information required for the task.
-* Prefer primary sources (official docs, repos, standards).
-
-### Rules for External Retrieval
-
-* Clearly state when Firecrawl is being used.
-* Summarize retrieved information succinctly.
-* Do NOT paste large raw scraped content.
-* Treat scraped data as contextual input, not ground truth.
-* If scraped sources conflict, request user clarification before proceeding.
-
----
-
-## 7) Mandatory Clarification & Question-Asking
-
-If **any part** of the user’s request, instructions, constraints, intent, or expected output is **unclear, ambiguous, underspecified, or open to multiple interpretations**, the Agent **MUST stop and ask clarifying questions before proceeding**.
-
-Rules:
-
-* The Agent MUST ask clarification questions **even if the doubt is small**.
-* The Agent MUST NOT assume intent, defaults, preferences, or constraints.
-* The Agent MUST NOT “fill gaps” based on prior experience or guesswork.
-* If multiple reasonable interpretations exist, the Agent MUST list them and ask which one to follow.
-* If the Agent is unsure whether clarification is needed, it MUST ask anyway.
-
-This applies to:
-
-* Prompts that are partially specified
-* Requests with missing constraints
-* Conflicting instructions
-* Unclear success criteria
-* Ambiguous terminology or scope
-
-Proceeding without clarification when uncertainty exists is considered a **rule violation**.
+If **any part** of the user's request is **unclear, ambiguous, underspecified, or open to multiple interpretations**, Agent **MUST stop and ask clarifying questions**. Never assume intent, defaults, preferences, or constraints. If unsure whether clarification is needed, ask anyway.
 
 ---
 
@@ -148,6 +141,4 @@ Unplanned work is a bug. Documentation-less assumptions are debt. Context-free c
 
 ---
 
-If you need any contexto go to the `/context` folder or ask me.
-
----
+If you need any context, go to the `/context` folder or ask me.

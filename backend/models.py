@@ -247,3 +247,43 @@ class WeightEntry(BaseModel):
 
     date: date
     weight_kg: float
+
+
+# --- User Profile Models ---
+
+
+class UserProfile(BaseModel):
+    """
+    Persistent user profile used across app.
+    """
+
+    user_id: str
+    name: Optional[str] = None
+    bio: Optional[str] = None
+    current_weight_kg: Optional[float] = None
+    wage_per_hour: Optional[float] = None
+
+    sex: Literal["male", "female", "other"]
+    date_of_birth: date
+    age: int
+    goal: Literal["build_muscle", "lose_fat"]
+    experience_level: Literal["beginner", "intermediate", "advanced"]
+    updated_at: datetime = datetime.now()
+
+
+class UserProfileUpdate(BaseModel):
+    """
+    Update payload for user profile form.
+    """
+
+    name: Optional[str] = None
+    bio: Optional[str] = None
+    current_weight_kg: Optional[float] = None
+    wage_per_hour: Optional[float] = None
+
+    sex: Optional[Literal["male", "female", "other"]] = None
+    date_of_birth: Optional[date] = None
+    age: Optional[int] = None
+    goal: Optional[Literal["build_muscle", "lose_fat"]] = None
+    experience_level: Optional[Literal["beginner", "intermediate", "advanced"]] = None
+    weight_date: Optional[date] = None

@@ -18,6 +18,8 @@ import type {
   WorkoutInsight,
   WorkoutLogEntry,
   WeightEntry,
+  UserProfile,
+  UserProfileUpdatePayload,
 } from "./types";
 
 // Re-export types for convenient access from other modules.
@@ -34,6 +36,8 @@ export type {
   ExerciseStats,
   WorkoutLogEntry,
   WeightEntry,
+  UserProfile,
+  UserProfileUpdatePayload,
 };
 
 // Base URL for the API, defaults to relative path in development/production.
@@ -215,4 +219,21 @@ export function logWeight(weight_kg: number, date: string) {
  */
 export function getWeightHistory() {
   return fetchJson<WeightEntry[]>("/metrics/weight/history");
+}
+
+/**
+ * Retrieves the user's profile.
+ */
+export function getProfile() {
+  return fetchJson<UserProfile>("/profile");
+}
+
+/**
+ * Updates the user's profile.
+ */
+export function updateProfile(body: UserProfileUpdatePayload) {
+  return fetchJson<UserProfile>("/profile", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
 }

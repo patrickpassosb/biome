@@ -29,12 +29,12 @@ class MemoryStore:
 
         try:
             # Check for explicit credentials or project ID in the environment.
-            if os.getenv("GOOGLE_APPLICATION_CREDENTIALS") or os.getenv(
-                "GCLOUD_PROJECT"
-            ):
-                self.db = firestore.Client()
+            project_id = os.getenv("GCLOUD_PROJECT")
+            db_id = os.getenv("FIRESTORE_DATABASE_ID", "(default)")
+            if os.getenv("GOOGLE_APPLICATION_CREDENTIALS") or project_id:
+                self.db = firestore.Client(project=project_id, database=db_id)
                 self.use_firestore = True
-                print("Connected to Firestore.")
+                print(f"Connected to Firestore (db: {db_id}).")
             else:
                 print("No Firestore credentials found. Using in-memory fallback.")
         except Exception as e:

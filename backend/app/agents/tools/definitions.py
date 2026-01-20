@@ -1,13 +1,17 @@
 """
 Tool definitions for Biome AI agents.
 
-These tools allow LLM-based agents to interact with the application's
+These tools allow LLM-based agents to interact with application's
 internal state, databases, and analytics engine. They follow the
 google-adk tool pattern.
 """
 
 from typing import Any, Dict
+
 from analytics.db import analytics
+from app.agents.config import USER_ID
+from user_profile import profile_store
+from memory.store import memory_store
 
 
 def get_gym_metrics(user_id: str, start_date: str, end_date: str) -> Dict[str, Any]:
@@ -32,10 +36,10 @@ def get_gym_metrics(user_id: str, start_date: str, end_date: str) -> Dict[str, A
 
 def get_user_profile(user_id: str) -> Dict[str, Any]:
     """
-    Retrieves the user's permanent profile including goals and preferences.
+    Retrieves user's permanent profile including goals and preferences.
 
-    This tool is used by the Coach Agent to ensure training plans align
-    with the user's experience level and available equipment.
+    This tool is used by Coach Agent to ensure training plans align
+    with user's experience level and available equipment.
 
     Args:
         user_id: Unique identifier for the user.
@@ -43,20 +47,31 @@ def get_user_profile(user_id: str) -> Dict[str, Any]:
     Returns:
         A dictionary containing goals, experience level, and training availability.
     """
-    # Mock implementation for the hackathon prototype.
+    resolved_user_id = user_id or USER_ID
+    profile = profile_store.get_profile(resolved_user_id)
+    if profile:
+        return profile.model_dump()
+
+    # Return default empty profile if none exists
     return {
-        "user_id": user_id,
-        "goals": ["increase_strength", "hypertrophy"],
-        "experience_level": "intermediate",
-        "available_days": ["Monday", "Wednesday", "Friday"],
+        "user_id": resolved_user_id,
+        "name": None,
+        "bio": None,
+        "current_weight_kg": None,
+        "wage_per_hour": None,
+        "sex": None,
+        "date_of_birth": None,
+        "age": None,
+        "goal": None,
+        "experience_level": None,
     }
 
 
 def get_past_plan(user_id: str) -> Dict[str, Any]:
     """
-    Retrieves the most recent weekly plan for the user.
+    Retrieves most recent weekly plan for the user.
 
-    This tool provides the Coach Agent with a baseline to ensure
+    This tool provides Coach Agent with a baseline to ensure
     continuity and to implement progressive overload.
 
     Args:
@@ -65,19 +80,20 @@ def get_past_plan(user_id: str) -> Dict[str, Any]:
     Returns:
         A dictionary representing the last WeeklyPlan executed by the user.
     """
-    # Mock implementation for the hackathon prototype.
+    # TODO: Implement plan persistence. Currently plans are generated
+    # via agent but not stored anywhere. Returning empty structure.
     return {
-        "week_start_date": "2023-10-23",
-        "goal": "Hypertrophy block",
-        "workouts": [],  # Should ideally contain the previous workout structures
+        "week_start_date": None,
+        "goal": None,
+        "workouts": [],
     }
 
 
 def save_memory_record(record: Dict[str, Any]) -> str:
     """
-    Saves a compressed memory record to the persistent database.
+    Saves a compressed memory record to persistent database.
 
-    Used by the Memory Curator Agent to ensure that important coaching
+    Used by Memory Curator Agent to ensure that important coaching
     insights are retained for future sessions.
 
     Args:
@@ -86,8 +102,9 @@ def save_memory_record(record: Dict[str, Any]) -> str:
     Returns:
         The unique ID of the saved record.
     """
-    # Mock implementation for the hackathon prototype.
-    return "mem_12345"
+    from models import MemoryRecord
+
+    return memory_store.write_memory(MemoryRecord(**record))
 
 
 def get_weight_history() -> Dict[str, Any]:

@@ -43,6 +43,7 @@ The heart of Biome is a multi-agent system built with the Google Agent Developme
 - **Python:** 3.12+
 - **`uv`:** Fast Python package manager (`curl -LsSf https://astral.sh/uv/install.sh | sh`)
 - **Google API Key:** Required for Gemini AI features.
+- **(Optional) Vertex AI:** To use Vertex AI quotas instead of the public Gemini API, set `GOOGLE_GENAI_USE_VERTEXAI=true`, `VERTEX_PROJECT_ID`, and `VERTEX_LOCATION` (e.g., `us-central1`) in your `.env`, and ensure your service account credentials are available via `GOOGLE_APPLICATION_CREDENTIALS` or ADC.
 
 ### Local Setup
 

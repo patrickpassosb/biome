@@ -1,4 +1,5 @@
-FROM python:3.12-slim
+# Context7: https://github.com/docker/docs/blob/main/content/manuals/build/building/multi-stage.md
+FROM python:3.12-slim AS builder
 
 # Install uv
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /bin/uv
@@ -26,6 +27,9 @@ RUN uv sync --frozen --no-dev --no-install-project
 FROM python:3.12-slim
 
 WORKDIR /app
+
+# Copy uv into runtime image so install/run commands are available.
+COPY --from=builder /bin/uv /bin/uv
 
 # Ensure the venv's interpreter path exists at runtime.
 # Context7: https://github.com/astral-sh/uv/blob/main/docs/pip/environments.md

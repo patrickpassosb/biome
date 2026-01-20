@@ -9,6 +9,9 @@ services:
       - PYTHONUNBUFFERED=1
     env_file:
       - .env
+    volumes:
+       # Mount Vertex/Firestore service account key into the container
+       - ./biome-134.json:/app/keys/biome-134.json:ro
 
   frontend:
     build:

@@ -115,7 +115,12 @@ export default function App() {
   }, [overviewState.data]);
 
   // Derived state: Use the AI-updated plan if available, otherwise use the initially fetched one.
-  const currentPlan = localPlan ?? planState.data;
+  const fallbackPlan: WeeklyPlan = {
+    week_start_date: new Date().toISOString().slice(0, 10),
+    goal: "Starter plan placeholder (AI generation unavailable).",
+    workouts: [],
+  };
+  const currentPlan = localPlan ?? planState.data ?? fallbackPlan;
 
   return (
     <div className="flex h-screen bg-black text-white selection:bg-white selection:text-black">

@@ -6,29 +6,38 @@ It reviews proposed training plans to ensure they are consistent, safe,
 and follow established programming principles.
 """
 
+from typing import Union
+
 from google.adk.agents import LlmAgent
+from google.adk.models.base_llm import BaseLlm
+
 from .config import MODEL_NAME
-from .models import WeeklyPlan, PlanValidationResult
+from models import WeeklyPlan, PlanValidationResult
 
 # The validator agent acts as a peer-reviewer for the Coach Agent.
 # It has a high 'skepticism' and checks for edge cases like excessive volume.
-validator_agent = LlmAgent(
-    name="validator",
-    model=MODEL_NAME,
-    description="Safety and consistency auditor for training protocols.",
-    instruction=(
-        "You are a training validation expert. Your role is to find potential issues "
-        "in the provided weekly training plan.\n\n"
-        "CHECKLIST:\n"
-        "- Volume: Is there excessive volume for a single session (>30 sets)?\n"
-        "- Balance: Are any major muscle groups completely ignored?\n"
-        "- Progression: Is the load increase unrealistic compared to past sessions?\n"
-        "- Safety: Are high-injury-risk exercises programmed without proper context?\n\n"
-        "If you find issues, provide a 'valid: false' status and a detailed list of 'issues'. "
-        "If the plan is sound, return 'valid: true'."
-    ),
-    # input_schema allows the agent to directly ingest the WeeklyPlan model.
-    input_schema=WeeklyPlan,
-    # output_schema provides a structured pass/fail report.
-    output_schema=PlanValidationResult,
-)
+ModelType = Union[str, BaseLlm]
+
+
+def build_validator_agent(model: ModelType) -> LlmAgent:
+    return LlmAgent(
+        name="validator",
+        model=model,
+        description="Safety and consistency auditor for training protocols.",
+        instruction=(
+            "You are a training validation expert. Your role is to find potential issues "
+            "in the provided weekly training plan.\n\n"
+            "CHECKLIST:\n"
+            "- Volume: Is there excessive volume for a single session (>30 sets)?\n"
+            "- Balance: Are any major muscle groups completely ignored?\n"
+            "- Progression: Is the load increase unrealistic compared to past sessions?\n"
+            "- Safety: Are high-injury-risk exercises programmed without proper context?\n\n"
+            "If you find issues, provide a 'valid: false' status and a detailed list of 'issues'. "
+            "If the plan is sound, return 'valid: true'."
+        ),
+        input_schema=WeeklyPlan,
+        output_schema=PlanValidationResult,
+    )
+
+
+validator_agent = build_validator_agent(MODEL_NAME)

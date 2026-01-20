@@ -168,3 +168,38 @@ export type WeightEntry = {
   date: string;
   weight_kg: number;
 };
+
+/**
+ * User profile payload stored in the backend.
+ */
+export type UserProfile = {
+  user_id: string;
+  name?: string | null;
+  bio?: string | null;
+  current_weight_kg?: number | null;
+  wage_per_hour?: number | null;
+  
+  sex: "male" | "female" | "other";
+  date_of_birth: string; // ISO format: YYYY-MM-DD
+  age: number;
+  goal: "build_muscle" | "lose_fat";
+  experience_level: "beginner" | "intermediate" | "advanced";
+  updated_at: string;
+};
+
+/**
+ * Update payload for the profile form.
+ */
+export type UserProfileUpdatePayload = {
+  name?: string;
+  bio?: string;
+  current_weight_kg?: number;
+  wage_per_hour?: number;
+  
+  sex?: "male" | "female" | "other";
+  date_of_birth?: string;
+  age?: number;
+  goal?: "build_muscle" | "lose_fat";
+  experience_level?: "beginner" | "intermediate" | "advanced";
+  weight_date?: string;
+};

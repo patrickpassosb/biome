@@ -7,7 +7,7 @@ and aggregates all specialized routers into a single API surface.
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from routers import metrics, plan, memory, agent as agent_router, data
+from routers import metrics, plan, memory, agent as agent_router, data, profile
 import uvicorn
 
 # Initialize the FastAPI application with metadata for documentation.
@@ -36,6 +36,7 @@ app.include_router(plan.router)  # AI-driven plan generation and validation.
 app.include_router(memory.router)  # Long-term snapshot storage and search.
 app.include_router(agent_router.router)  # Real-time chat with the coaching team.
 app.include_router(data.router)  # Data management, demo mode, and CSV imports.
+app.include_router(profile.router)  # User profile read/write.
 
 
 @app.get("/")

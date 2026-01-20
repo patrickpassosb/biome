@@ -13,14 +13,20 @@ from datetime import date, timedelta
 from typing import List, Dict, Any, Optional
 from models import TrendPoint, WorkoutLogEntry
 
+# Ensure paths are relative to the backend directory
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+DATA_DIR = os.path.join(BASE_DIR, "data")
+
+if not os.path.exists(DATA_DIR):
+    os.makedirs(DATA_DIR)
+
 # Environment-based configuration for database paths.
-# During testing, we use an in-memory database to ensure isolation.
 if os.environ.get("TESTING") == "true":
     DB_PATH = ":memory:"
-    CSV_PATH = "data/gym_data.csv"
+    CSV_PATH = os.path.join(DATA_DIR, "gym_data.csv")
 else:
-    DB_PATH = "data/analytics.duckdb"
-    CSV_PATH = "data/gym_data.csv"
+    DB_PATH = os.path.join(DATA_DIR, "analytics.duckdb")
+    CSV_PATH = os.path.join(DATA_DIR, "gym_data.csv")
 
 
 class AnalyticsEngine:
