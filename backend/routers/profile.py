@@ -8,7 +8,6 @@ from datetime import date
 
 from fastapi import APIRouter, HTTPException
 
-from analytics.db import analytics
 from app.agents.config import USER_ID
 from models import UserProfile, UserProfileUpdate
 from user_profile import profile_store
@@ -53,11 +52,8 @@ async def get_profile():
 @router.post("", response_model=UserProfile)
 async def update_profile(update: UserProfileUpdate):
     """
-    Upserts user profile and logs to provided weight into analytics.
+    Upserts user profile details.
     """
-    if update.current_weight_kg is not None and update.current_weight_kg <= 0:
-        raise HTTPException(status_code=400, detail="Weight must be greater than zero.")
-
     if update.wage_per_hour is not None and update.wage_per_hour < 0:
         raise HTTPException(status_code=400, detail="Wage must be zero or greater.")
 
@@ -98,7 +94,6 @@ async def update_profile(update: UserProfileUpdate):
         "age",
         "goal",
         "experience_level",
-        "current_weight_kg",
         "wage_per_hour",
     ]:
         value = getattr(update, field)
@@ -106,10 +101,6 @@ async def update_profile(update: UserProfileUpdate):
             updated_data[field] = value
 
     updated_profile = UserProfile(**updated_data)
-
-    if update.current_weight_kg is not None:
-        log_date = update.weight_date or date.today()
-        analytics.log_weight(log_date, update.current_weight_kg)
 
     profile_store.upsert_profile(updated_profile)
     return updated_profile

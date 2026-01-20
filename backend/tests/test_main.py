@@ -15,23 +15,11 @@ def test_root_endpoint(client):
     assert response.json() == {"status": "ok", "message": "Biome Backend is running"}
 
 
-def test_metrics_overview_endpoint(client):
+def test_profile_endpoint(client):
     """
-    Verifies that the /metrics/overview endpoint is reachable and
-    returns a valid MetricsOverview model structure.
+    Verifies that the /profile endpoint is reachable.
     """
-    response = client.get("/metrics/overview")
+    response = client.get("/profile")
     assert response.status_code == 200
     data = response.json()
-    assert "weekly_frequency" in data
-    assert "total_volume_load_current_week" in data
-
-
-def test_metrics_trends_endpoint(client):
-    """
-    Verifies the /metrics/trends endpoint with a valid query parameter.
-    """
-    response = client.get("/metrics/trends?metric=volume_load")
-    assert response.status_code == 200
-    data = response.json()
-    assert isinstance(data, list)  # Returns an array of TrendPoint objects
+    assert data["user_id"]

@@ -6,40 +6,16 @@ describe('API Client', () => {
     vi.stubGlobal('fetch', vi.fn())
   })
 
-  it('getOverviewMetrics calls fetch with correct path', async () => {
-    const mockData = { weekly_frequency: 3 }
+  it('proposeWeeklyPlan calls fetch with correct path', async () => {
+    const mockData = { week_start_date: '2023-01-01', goal: 'Test', workouts: [] }
     vi.mocked(fetch).mockResolvedValue({
       ok: true,
       json: async () => mockData,
     } as Response)
 
-    const result = await api.getOverviewMetrics()
-    expect(fetch).toHaveBeenCalledWith('/metrics/overview', expect.any(Object))
+    const result = await api.proposeWeeklyPlan()
+    expect(fetch).toHaveBeenCalledWith('/plan/propose', expect.any(Object))
     expect(result).toEqual(mockData)
-  })
-
-  it('logWorkout sends correct payload', async () => {
-    vi.mocked(fetch).mockResolvedValue({
-      ok: true,
-      json: async () => ({ status: 'success' }),
-    } as Response)
-
-    const entry = {
-        date: '2023-01-01',
-        workout: 'Test',
-        exercise: 'Bench',
-        set_number: 1,
-        reps: 10,
-        weight_kg: 100,
-        rpe: 8,
-        notes: ''
-    }
-    await api.logWorkout(entry)
-    
-    expect(fetch).toHaveBeenCalledWith('/data/log', expect.objectContaining({
-      method: 'POST',
-      body: JSON.stringify(entry)
-    }))
   })
 
   it('handles fetch errors', async () => {
@@ -49,6 +25,6 @@ describe('API Client', () => {
       text: async () => 'Internal Server Error',
     } as Response)
 
-    await expect(api.getOverviewMetrics()).rejects.toThrow('Internal Server Error')
+    await expect(api.proposeWeeklyPlan()).rejects.toThrow('Internal Server Error')
   })
 })

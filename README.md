@@ -1,6 +1,6 @@
 # Biome - Training Intelligence
 
-Biome is a production-grade, AI-powered training intelligence dashboard designed for strength athletes and coaches. It leverages a multi-agent AI system to analyze training data, generate optimized weekly plans, and maintain a long-term memory of progress and reflections.
+Biome is a production-grade, AI-powered training intelligence app designed for strength athletes and coaches. It leverages a multi-agent AI system to analyze training data, generate optimized weekly plans, and maintain a long-term memory of progress and reflections.
 
 ## 🚀 Overview
 
@@ -30,9 +30,8 @@ The heart of Biome is a multi-agent system built with the Google Agent Developme
 - **Persistence:** Google Cloud Firestore for long-term memory and DuckDB for local analytics.
 
 ### 3. Frontend (Next.js + Tailwind)
-- **Dashboard:** Real-time visualization of volume velocity, exercise progress, and recent signals.
 - **AI Chat:** Direct interaction with the Biome coaching team for real-time adjustments and advice.
-- **Management:** Easy data import, weight tracking, and system configuration.
+- **Management:** Easy data import and system configuration.
 
 ---
 
@@ -63,7 +62,7 @@ The heart of Biome is a multi-agent system built with the Google Agent Developme
     npm run dev
     ```
 
-Access the dashboard at `http://localhost:3000` and the API docs at `http://localhost:8000/docs`.
+Access the app at `http://localhost:3000` and the API docs at `http://localhost:8000/docs`.
 
 ---
 

@@ -79,9 +79,7 @@ def test_propose_plan_invalid_json(
     mock_collect_final_text.return_value = "not valid json"
 
     response = client.post("/plan/propose")
-    assert response.status_code == 200
-    data = response.json()
-    assert "Error" in data["goal"]
+    assert response.status_code == 502
 
 
 def test_propose_plan_no_response(
@@ -95,9 +93,7 @@ def test_propose_plan_no_response(
     mock_collect_final_text.return_value = None
 
     response = client.post("/plan/propose")
-    assert response.status_code == 200
-    data = response.json()
-    assert "Error" in data["goal"]
+    assert response.status_code == 502
 
 
 def test_revise_plan_success(
@@ -148,9 +144,7 @@ def test_revise_plan_fallback(
     }
 
     response = client.post("/plan/revise", json=request_data)
-    assert response.status_code == 200
-    data = response.json()
-    assert data["goal"] == "Original Goal"
+    assert response.status_code == 502
 
 
 def test_validate_plan_success(
@@ -185,7 +179,4 @@ def test_validate_plan_failure(
     plan_data = {"week_start_date": "2023-01-15", "goal": "Test Plan", "workouts": []}
 
     response = client.post("/plan/validate", json=plan_data)
-    assert response.status_code == 200
-    data = response.json()
-    assert data["valid"] is False
-    assert "Error" in data["issues"][0]
+    assert response.status_code == 502

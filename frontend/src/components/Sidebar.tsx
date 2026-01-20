@@ -2,17 +2,17 @@
  * Sidebar Component
  *
  * Handles primary application navigation. It provides a fixed vertical
- * menu on large screens, allowing users to switch between the Dashboard,
- * AI Agent chat, Weight tracking, and Settings.
+ * menu on large screens, allowing users to switch between the AI Agent chat
+ * and Settings.
  */
 
-import { LayoutGrid, Sparkles, Settings, Activity } from "lucide-react";
+import { Sparkles, Settings } from "lucide-react";
 
 interface SidebarProps {
     /** The active view ID. */
-    currentView: 'dashboard' | 'agent' | 'weight' | 'settings';
+    currentView: 'agent' | 'settings';
     /** Callback to update the active view in the parent App component. */
-    onViewChange: (view: 'dashboard' | 'agent' | 'weight' | 'settings') => void;
+    onViewChange: (view: 'agent' | 'settings') => void;
 }
 
 export function Sidebar({ currentView, onViewChange }: SidebarProps) {
@@ -21,9 +21,7 @@ export function Sidebar({ currentView, onViewChange }: SidebarProps) {
      * Defines the ID, display label, and Lucide icon for each navigation link.
      */
     const menuItems = [
-        { id: 'dashboard', label: 'Dashboard', icon: LayoutGrid },
         { id: 'agent', label: 'Agents', icon: Sparkles },
-        { id: 'weight', label: 'Weight', icon: Activity },
         { id: 'settings', label: 'Profile', icon: Settings },
     ] as const;
 

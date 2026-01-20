@@ -240,15 +240,6 @@ class WorkoutInsight(BaseModel):
     message: str
 
 
-class WeightEntry(BaseModel):
-    """
-    A body weight measurement record.
-    """
-
-    date: date
-    weight_kg: float
-
-
 # --- User Profile Models ---
 
 
@@ -260,7 +251,6 @@ class UserProfile(BaseModel):
     user_id: str
     name: Optional[str] = None
     bio: Optional[str] = None
-    current_weight_kg: Optional[float] = None
     wage_per_hour: Optional[float] = None
 
     sex: Literal["male", "female", "other"]
@@ -278,7 +268,6 @@ class UserProfileUpdate(BaseModel):
 
     name: Optional[str] = None
     bio: Optional[str] = None
-    current_weight_kg: Optional[float] = None
     wage_per_hour: Optional[float] = None
 
     sex: Optional[Literal["male", "female", "other"]] = None
@@ -286,4 +275,3 @@ class UserProfileUpdate(BaseModel):
     age: Optional[int] = None
     goal: Optional[Literal["build_muscle", "lose_fat"]] = None
     experience_level: Optional[Literal["beginner", "intermediate", "advanced"]] = None
-    weight_date: Optional[date] = None

@@ -57,7 +57,6 @@ def get_user_profile(user_id: str) -> Dict[str, Any]:
         "user_id": resolved_user_id,
         "name": None,
         "bio": None,
-        "current_weight_kg": None,
         "wage_per_hour": None,
         "sex": None,
         "date_of_birth": None,
@@ -106,16 +105,3 @@ def save_memory_record(record: Dict[str, Any]) -> str:
 
     return memory_store.write_memory(MemoryRecord(**record))
 
-
-def get_weight_history() -> Dict[str, Any]:
-    """
-    Retrieves the user's historical body weight measurements.
-
-    Used by the Analyst Agent to correlate strength gains with changes
-    in body composition.
-
-    Returns:
-        A dictionary containing a list of weight entries.
-    """
-    history = analytics.get_weight_history()
-    return {"weight_history": history}

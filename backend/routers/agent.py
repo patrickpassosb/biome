@@ -8,12 +8,11 @@ runner using the google-adk framework.
 
 import asyncio
 import logging
-import os
 import time
 from dataclasses import dataclass
 from typing import List, Optional
 
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from google.adk.errors.already_exists_error import AlreadyExistsError
 from google.adk.runners import Runner
 from google.adk.sessions import InMemorySessionService
@@ -28,27 +27,7 @@ from user_profile import profile_store
 router = APIRouter(prefix="/agent", tags=["Agent"])
 logger = logging.getLogger(__name__)
 LLM_BACKOFF_SECONDS = 300
-RUN_TIMEOUT_SECONDS = 20
-
-
-def _build_fallback_response(user_message: str, profile_context: str) -> str:
-    """
-    Offline response used when the Gemini API is unavailable (e.g., quota errors).
-    """
-    profile_summary = profile_context.strip().replace("\n\n", "\n")
-    profile_line = f"\n\nLatest profile details:\n{profile_summary}" if profile_summary else ""
-    prompt_echo = f"Your last message: \"{user_message}\"" if user_message else "I received your last message."
-    return (
-        "I'm in fallback coach mode because the AI model is temporarily unavailable "
-        "(enable AGENT_ENABLE_LLM=1 with a billed Gemini API key to restore live replies). "
-        f"{prompt_echo}\n"
-        "Quick guidance while we restore full coaching:\n"
-        "- Keep a consistent 3-4 day split (push/pull/lower or upper/lower).\n"
-        "- Prioritize compound lifts first, then accessories.\n"
-        "- Use RPE 7-8 for main work, 1-2 reps in reserve on accessories.\n"
-        "- Log sets, weights, and any pain notes so I can adjust when back online."
-        f"{profile_line}"
-    )
+RUN_TIMEOUT_SECONDS = 45
 
 
 # --- Agent Runner Setup ---
@@ -173,7 +152,6 @@ User Profile Context:
 - Age: {profile_dict.get("age") or "Not set"}
 - Primary Goal: {profile_dict.get("goal") or "Not set"}
 - Experience Level: {profile_dict.get("experience_level") or "Not set"}
-- Current Weight: {profile_dict.get("current_weight_kg") or "Not set"} kg
 
 """
 
@@ -183,17 +161,18 @@ User Profile Context:
 
     full_message = profile_context + f"\n\nUser: {user_message}"
 
-    final_response = "No response from agent."
-    offline_mode = os.getenv("AGENT_OFFLINE_MODE") == "1"
-    if not LLM_ENABLED or offline_mode or not provider_runners:
-        final_response = _build_fallback_response(user_message, profile_context)
-    else:
-        content = types.Content(role="user", parts=[types.Part(text=full_message)])
-        response = await _run_with_fallback(content)
-        if response:
-            final_response = response
+    if not LLM_ENABLED or not provider_runners:
+        raise HTTPException(
+            status_code=503,
+            detail="Agent LLM is disabled or not configured. Set AGENT_ENABLE_LLM=1 and configure Gemini/Vertex credentials.",
+        )
 
-    if final_response == "No response from agent.":
-        final_response = _build_fallback_response(user_message, profile_context)
+    content = types.Content(role="user", parts=[types.Part(text=full_message)])
+    response = await _run_with_fallback(content)
+    if not response:
+        raise HTTPException(
+            status_code=502,
+            detail="Agent execution failed to return a response. Check Gemini/Vertex credentials and quotas.",
+        )
 
-    return ChatResponse(message=final_response, agent_persona="Biome Coach")
+    return ChatResponse(message=response, agent_persona="Biome Coach")

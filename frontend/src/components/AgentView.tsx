@@ -96,11 +96,12 @@ export function AgentView({ currentPlan, onPlanUpdate, chatWithAgent, messages, 
                 proposedPlan: response.proposed_plan
             };
             setMessages(prev => [...prev, agentMsg]);
-        } catch {
-            // Error Handling: Provide a friendly system message if the backend is down.
+        } catch (error) {
+            // Error Handling: Surface the backend error to avoid silent fallback behavior.
+            const message = error instanceof Error ? error.message : "Agent request failed.";
             setMessages(prev => [...prev, {
                 role: 'assistant',
-                content: "The team is momentarily unavailable. Let me check the logs and I'll be right back.",
+                content: `Agent system error: ${message}`,
                 timestamp: new Date(),
                 agentPersona: "System"
             }]);
@@ -118,7 +119,7 @@ export function AgentView({ currentPlan, onPlanUpdate, chatWithAgent, messages, 
         onPlanUpdate(plan);
         setMessages(prev => [...prev, {
             role: 'assistant',
-            content: "Excellent! I've updated your main training plan. You can see the new structure on your Dashboard.",
+            content: "Excellent! I've updated your main training plan. You can see the new structure here.",
             timestamp: new Date(),
             agentPersona: "Workout Specialist"
         }]);

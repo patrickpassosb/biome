@@ -9,7 +9,7 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: "Biome Training Intelligence",
-  description: "Premium training intelligence dashboard for weekly performance.",
+  description: "Premium training intelligence for weekly performance.",
 };
 
 export default function RootLayout({

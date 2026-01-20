@@ -55,10 +55,10 @@ def _build_provider_agents(name: str, llm: BaseLlm) -> ProviderAgents:
 
 PROVIDER_AGENTS: List[ProviderAgents] = []
 
-_public_llm = _build_public_llm()
-if _public_llm:
-    PROVIDER_AGENTS.append(_build_provider_agents("public", _public_llm))
-
 _vertex_llm = _build_vertex_llm()
 if _vertex_llm:
     PROVIDER_AGENTS.append(_build_provider_agents("vertex", _vertex_llm))
+
+_public_llm = _build_public_llm()
+if _public_llm:
+    PROVIDER_AGENTS.append(_build_provider_agents("public", _public_llm))

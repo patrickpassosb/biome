@@ -8,42 +8,29 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useAsyncData } from "./hooks/useAsyncData";
 import {
-  getMemoryTimeline,
-  getOverviewMetrics,
-  getTrend,
   proposeWeeklyPlan,
   chatWithAgent,
 } from "@/lib/api";
 
 // View components
 import { Sidebar } from "@/components/Sidebar";
-import { DashboardView } from "@/components/DashboardView";
 import { AgentView, type Message } from "@/components/AgentView";
 import { SettingsView } from "@/components/SettingsView";
-import { WeightView } from "@/components/WeightView";
 
 // Type definitions
 import type { WeeklyPlan } from "@/lib/api";
-import { Info } from "lucide-react";
 
 /**
  * Header component shared across all main views.
  * Displays the application name and a visual indicator if the system is in Demo Mode.
  *
- * @param isDemo - Boolean flag indicating if demo data is currently active.
  */
-const Header = ({ isDemo }: { isDemo: boolean }) => (
+const Header = () => (
   <header className="mb-10 flex items-center justify-between">
     <h2 className="text-4xl font-bold tracking-tighter text-white">Biome</h2>
-    {isDemo && (
-      <div className="flex items-center gap-2 px-4 py-2 bg-emerald-500/10 border border-emerald-500/20 rounded-full text-emerald-400 text-xs font-bold animate-pulse">
-        <Info className="w-4 h-4" />
-        DEMO MODE ACTIVE
-      </div>
-    )}
   </header>
 );
 
@@ -53,27 +40,10 @@ const Header = ({ isDemo }: { isDemo: boolean }) => (
  */
 export default function App() {
   // Navigation state: determines which main view is rendered.
-  const [currentView, setCurrentView] = useState<'dashboard' | 'agent' | 'weight' | 'settings'>('dashboard');
-
-  // Centralized Data Fetching using a custom hook to manage loading/error states.
-
-  // Fetches high-level KPIs (Frequency, Volume, Weak Points).
-  const overviewState = useAsyncData(getOverviewMetrics, []);
-
-  // Fetches multiple trend datasets (Volume and Frequency) in parallel.
-  const trendsState = useAsyncData(async () => {
-    const [vol, freq] = await Promise.all([
-      getTrend("volume_load"),
-      getTrend("weekly_frequency"),
-    ]);
-    return { volume: vol, frequency: freq };
-  }, []);
+  const [currentView, setCurrentView] = useState<'agent' | 'settings'>('agent');
 
   // Fetches the initial proposed weekly plan from the AI Coach.
   const planState = useAsyncData(proposeWeeklyPlan, []);
-
-  // Fetches the latest 10 items from the long-term memory store.
-  const memoryState = useAsyncData(() => getMemoryTimeline(10), []);
 
   // Local state for the training plan.
   // If the user uses the AI Chat to modify their plan, the updated version is stored here.
@@ -89,30 +59,6 @@ export default function App() {
       agentPersona: "Biome Team"
     }
   ]);
-
-  /**
-   * Effect: Handles 'Cold Start' onboarding for new users.
-   * If the system detects zero training history and demo mode is off,
-   * it prompts the user to define their goals and availability.
-   */
-  useEffect(() => {
-    if (overviewState.data &&
-        !overviewState.data.is_demo &&
-        overviewState.data.total_volume_load_current_week === 0 &&
-        overviewState.data.weekly_frequency === 0) {
-
-      // Small timeout to prevent React from warning about cascading renders.
-      const timer = setTimeout(() => {
-        setMessages([{
-          role: 'assistant',
-          content: "Welcome to Biome! I see you don't have any training history recorded yet. No problem—I can help you build your first plan from scratch. \n\nWhat are your primary goals (e.g., Strength, Muscle Growth) and how many days a week would you like to train?",
-          timestamp: new Date(),
-          agentPersona: "Biome Team"
-        }]);
-      }, 0);
-      return () => clearTimeout(timer);
-    }
-  }, [overviewState.data]);
 
   // Derived state: Use the AI-updated plan if available, otherwise use the initially fetched one.
   const fallbackPlan: WeeklyPlan = {
@@ -133,20 +79,10 @@ export default function App() {
       {/* Main Content Area: Scrollable container for the dynamic views. */}
       <main className="flex-1 overflow-y-auto custom-scrollbar p-10 lg:p-12">
         {/* Global Header */}
-        <Header isDemo={overviewState.data?.is_demo ?? false} />
+        <Header />
 
         {/* View Switcher: Renders the active component based on currentView state. */}
         <div className="animate-in fade-in duration-1000">
-          {currentView === 'dashboard' && (
-            <DashboardView
-              overview={overviewState.data}
-              trends={trendsState.data}
-              plan={currentPlan}
-              memory={memoryState.data ?? []}
-              loading={overviewState.loading || trendsState.loading}
-            />
-          )}
-
           {currentView === 'agent' && (
             <AgentView
               currentPlan={currentPlan}
@@ -159,10 +95,6 @@ export default function App() {
 
           {currentView === 'settings' && (
             <SettingsView />
-          )}
-
-          {currentView === 'weight' && (
-            <WeightView />
           )}
         </div>
       </main>

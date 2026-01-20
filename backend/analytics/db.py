@@ -34,7 +34,7 @@ class AnalyticsEngine:
     Handles data ingestion, storage, and analytical queries using DuckDB.
 
     The engine manages two main training history tables: one for actual user data
-    and one for demo purposes. It also tracks body weight history.
+    and one for demo purposes.
     """
 
     def __init__(self):
@@ -94,14 +94,6 @@ class AnalyticsEngine:
                 warm_up VARCHAR,
                 rpe DOUBLE,
                 notes VARCHAR
-            );
-        """)
-
-        # Define the weight history table for body composition tracking.
-        self.con.execute("""
-            CREATE TABLE IF NOT EXISTS weight_history (
-                date DATE PRIMARY KEY,
-                weight_kg DOUBLE
             );
         """)
 
@@ -189,29 +181,6 @@ class AnalyticsEngine:
                 entry.notes,
             ],
         )
-
-    def log_weight(self, date_val: date, weight_kg: float):
-        """
-        Logs weight for a specific date, overwriting if an entry already exists.
-
-        Args:
-            date_val: The date of the measurement.
-            weight_kg: Body weight in kg.
-        """
-        query = """
-            INSERT INTO weight_history (date, weight_kg)
-            VALUES (?, ?)
-            ON CONFLICT (date) DO UPDATE SET weight_kg = EXCLUDED.weight_kg
-        """
-        self.con.execute(query, [date_val, weight_kg])
-
-    def get_weight_history(self) -> List[Dict[str, Any]]:
-        """
-        Retrieves ordered weight history for trend visualization.
-        """
-        query = "SELECT date, weight_kg FROM weight_history ORDER BY date ASC"
-        results = self.con.execute(query).fetchall()
-        return [{"date": str(r[0]), "weight_kg": r[1]} for r in results]
 
     def get_latest_date(self) -> date:
         """

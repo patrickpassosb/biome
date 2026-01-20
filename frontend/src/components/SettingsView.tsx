@@ -2,7 +2,7 @@
  * SettingsView Component
  *
  * Simplified profile + data management surface. Users can edit their basic
- * profile (bio, weight, wage) and manage demo/data import settings.
+ * profile (bio, wage) and manage demo/data import settings.
  */
 
 "use client";
@@ -15,7 +15,6 @@ import type { UserProfileUpdatePayload } from "@/lib/types";
 type ProfileFormState = {
     name: string;
     bio: string;
-    currentWeight: string;
     wage: string;
     sex: UserProfileUpdatePayload["sex"] | "";
     dateOfBirth: string;
@@ -59,7 +58,6 @@ export function SettingsView() {
     const [profileForm, setProfileForm] = useState<ProfileFormState>({
         name: "",
         bio: "",
-        currentWeight: "",
         wage: "",
         sex: "",
         dateOfBirth: "",
@@ -77,7 +75,6 @@ export function SettingsView() {
                 setProfileForm({
                     name: data.name ?? "",
                     bio: data.bio ?? "",
-                    currentWeight: data.current_weight_kg ? data.current_weight_kg.toString() : "",
                     wage: data.wage_per_hour ? data.wage_per_hour.toString() : "",
                     sex: normalizeSex(data.sex) ?? "",
                     dateOfBirth: data.date_of_birth ?? "",
@@ -97,8 +94,8 @@ export function SettingsView() {
     }, []);
 
     const handleProfileChange = (
-        key: "name" | "bio" | "currentWeight" | "wage" | 
-          "sex" | "dateOfBirth" | "age" | "goal" | "experienceLevel", 
+        key: "name" | "bio" | "wage" |
+          "sex" | "dateOfBirth" | "age" | "goal" | "experienceLevel",
         value: string
     ) => {
         setProfileForm((prev) => ({ ...prev, [key]: value }));
@@ -119,7 +116,6 @@ export function SettingsView() {
         const payload: UserProfileUpdatePayload = {
             name: profileForm.name.trim() || undefined,
             bio: profileForm.bio.trim() || undefined,
-            current_weight_kg: toNumber(profileForm.currentWeight),
             wage_per_hour: toNumber(profileForm.wage),
             sex: normalizeSex(profileForm.sex),
             date_of_birth: profileForm.dateOfBirth || undefined,
@@ -128,16 +124,11 @@ export function SettingsView() {
             experience_level: normalizeExperience(profileForm.experienceLevel),
         };
 
-        if (payload.current_weight_kg !== undefined) {
-            payload.weight_date = new Date().toISOString().split("T")[0];
-        }
-
         try {
             const saved = await updateProfile(payload);
             setProfileForm({
                 name: saved.name ?? "",
                 bio: saved.bio ?? "",
-                currentWeight: saved.current_weight_kg?.toString() ?? "",
                 wage: saved.wage_per_hour?.toString() ?? "",
                 sex: normalizeSex(saved.sex) ?? "",
                 dateOfBirth: saved.date_of_birth ?? "",
@@ -320,25 +311,6 @@ export function SettingsView() {
                             />
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <label className="text-sm text-[color:var(--muted-foreground)]">Current Weight (kg)</label>
-                                <input
-                                    type="number"
-                                    min={0}
-                                    step="0.1"
-                                    value={profileForm.currentWeight}
-                                    onChange={(e) => handleProfileChange("currentWeight", e.target.value)}
-                                    className="w-full bg-[color:var(--surface)] border border-[color:var(--glass-border)] rounded-xl px-4 py-2 text-white"
-                                    placeholder="e.g., 82.5"
-                                    disabled={profileLoading || savingProfile}
-                                />
-                                <p className="text-xs text-[color:var(--muted-foreground)]">
-                                    Saved weights sync with the weight tracker automatically.
-                                </p>
-                            </div>
-                        </div>
-
                         <div className="flex items-center justify-end">
                             <button
                                 type="submit"
@@ -366,7 +338,7 @@ export function SettingsView() {
                                     Demo Mode
                                 </p>
                                 <p className="text-sm text-[color:var(--muted-foreground)]">
-                                    Populate dashboard with sample data to explore features.
+                                    Populate the app with sample data to explore features.
                                 </p>
                             </div>
                             <button

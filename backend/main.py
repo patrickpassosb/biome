@@ -7,14 +7,14 @@ and aggregates all specialized routers into a single API surface.
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from routers import metrics, plan, memory, agent as agent_router, data, profile
+from routers import plan, memory, agent as agent_router, data, profile
 import uvicorn
 
 # Initialize the FastAPI application with metadata for documentation.
 app = FastAPI(
     title="Biome Training Intelligence API",
     version="1.0.0",
-    description="API for Training Intelligence Dashboard (Biome). Supports data ingestion, AI coaching, and long-term memory.",
+    description="API for Training Intelligence (Biome). Supports data ingestion, AI coaching, and long-term memory.",
 )
 
 # Configure CORS (Cross-Origin Resource Sharing) middleware.
@@ -31,7 +31,6 @@ app.add_middleware(
 
 # Aggregate routers from the 'routers' package.
 # Each router handles a specific domain of the application.
-app.include_router(metrics.router)  # Training trends, overview, and exercise stats.
 app.include_router(plan.router)  # AI-driven plan generation and validation.
 app.include_router(memory.router)  # Long-term snapshot storage and search.
 app.include_router(agent_router.router)  # Real-time chat with the coaching team.

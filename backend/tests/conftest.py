@@ -13,6 +13,8 @@ import sys
 
 # Set the TESTING environment variable to trigger ':memory:' database path in db.py.
 os.environ["TESTING"] = "true"
+os.environ.setdefault("AGENT_ENABLE_LLM", "1")
+os.environ.setdefault("GOOGLE_API_KEY", "test-key")
 
 # Add the parent directory to sys.path so we can import modules from 'backend/'.
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
@@ -30,7 +32,6 @@ def clean_db():
 
     analytics.con.execute("DELETE FROM training_history")
     analytics.con.execute("DELETE FROM demo_training_history")
-    analytics.con.execute("DELETE FROM weight_history")
     yield
 
 

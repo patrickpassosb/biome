@@ -11,7 +11,7 @@ import json
 import logging
 from typing import Optional
 
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from google.adk.agents import LlmAgent
 from google.adk.runners import Runner
 from google.adk.sessions import InMemorySessionService
@@ -24,7 +24,7 @@ from models import WeeklyPlan, RevisePlanRequest, PlanValidationResult
 
 router = APIRouter(prefix="/plan", tags=["Plan"])
 logger = logging.getLogger(__name__)
-RUN_TIMEOUT_SECONDS = 20
+RUN_TIMEOUT_SECONDS = 45
 
 
 async def _run_with_provider(
@@ -90,10 +90,9 @@ async def propose_plan():
     Flow: Coordinator -> Analyst (Data Check) -> Coach (Plan Draft) -> Return.
     """
     if not LLM_ENABLED or not PROVIDER_AGENTS:
-        return WeeklyPlan(
-            week_start_date="2023-01-01",
-            goal="AI plan generation is disabled (set AGENT_ENABLE_LLM=1 with a billed Gemini API key).",
-            workouts=[],
+        raise HTTPException(
+            status_code=503,
+            detail="Plan generation is disabled. Set AGENT_ENABLE_LLM=1 and configure Gemini/Vertex credentials.",
         )
     prompt = "Propose a new weekly training plan based on the user's data."
 
@@ -108,11 +107,15 @@ async def propose_plan():
             plan_dict = json.loads(final_response)
             return WeeklyPlan(**plan_dict)
         except (json.JSONDecodeError, TypeError):
-            pass
+            raise HTTPException(
+                status_code=502,
+                detail="Plan generation returned invalid JSON from the LLM.",
+            )
 
-    # Fallback or error response if the AI fails to produce a valid schema.
-    failure_reason = final_response or "Error: Could not generate plan."
-    return WeeklyPlan(week_start_date="2023-01-01", goal=failure_reason, workouts=[])
+    raise HTTPException(
+        status_code=502,
+        detail="Plan generation failed to return a response from the LLM.",
+    )
 
 
 @router.post("/revise", response_model=WeeklyPlan)
@@ -123,7 +126,10 @@ async def revise_plan(request: RevisePlanRequest):
     Example feedback: 'I have a sore shoulder, replace bench press with flyes.'
     """
     if not LLM_ENABLED or not PROVIDER_AGENTS:
-        return request.current_plan
+        raise HTTPException(
+            status_code=503,
+            detail="Plan revision is disabled. Set AGENT_ENABLE_LLM=1 and configure Gemini/Vertex credentials.",
+        )
 
     # Injected state into the prompt to provide context to the agent.
     prompt = (
@@ -141,10 +147,15 @@ async def revise_plan(request: RevisePlanRequest):
             plan_dict = json.loads(final_response)
             return WeeklyPlan(**plan_dict)
         except (json.JSONDecodeError, TypeError):
-            pass
+            raise HTTPException(
+                status_code=502,
+                detail="Plan revision returned invalid JSON from the LLM.",
+            )
 
-    # Return the original plan if revision fails to maintain system stability.
-    return request.current_plan
+    raise HTTPException(
+        status_code=502,
+        detail="Plan revision failed to return a response from the LLM.",
+    )
 
 
 @router.post("/validate", response_model=PlanValidationResult)
@@ -153,11 +164,9 @@ async def validate_plan(plan: WeeklyPlan):
     Invokes the Validator Agent to perform a safety audit on a training protocol.
     """
     if not LLM_ENABLED or not PROVIDER_AGENTS:
-        return PlanValidationResult(
-            valid=False,
-            issues=[
-                "Validation unavailable: enable AGENT_ENABLE_LLM=1 with a billed Gemini API key."
-            ],
+        raise HTTPException(
+            status_code=503,
+            detail="Plan validation is disabled. Set AGENT_ENABLE_LLM=1 and configure Gemini/Vertex credentials.",
         )
     prompt = plan.model_dump_json()
     final_response = await _run_with_fallback(
@@ -171,9 +180,12 @@ async def validate_plan(plan: WeeklyPlan):
             result_dict = json.loads(final_response)
             return PlanValidationResult(**result_dict)
         except (json.JSONDecodeError, TypeError):
-            pass
+            raise HTTPException(
+                status_code=502,
+                detail="Plan validation returned invalid JSON from the LLM.",
+            )
 
-    failure_issue = (
-        final_response or "Error: Could not validate plan due to an internal error."
+    raise HTTPException(
+        status_code=502,
+        detail="Plan validation failed to return a response from the LLM.",
     )
-    return PlanValidationResult(valid=False, issues=[failure_issue])
