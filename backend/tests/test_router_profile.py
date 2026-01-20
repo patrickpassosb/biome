@@ -1,4 +1,4 @@
-from user_profile.store import profile_store
+from profile_store import profile_store
 
 
 def test_get_profile_defaults(client, mock_firestore):

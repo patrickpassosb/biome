@@ -10,7 +10,7 @@ from typing import Any, Dict
 
 from analytics.db import analytics
 from app.agents.config import USER_ID
-from user_profile import profile_store
+from profile_store import profile_store
 from memory.store import memory_store
 
 
@@ -104,4 +104,3 @@ def save_memory_record(record: Dict[str, Any]) -> str:
     from models import MemoryRecord
 
     return memory_store.write_memory(MemoryRecord(**record))
-

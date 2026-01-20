@@ -10,7 +10,7 @@ from fastapi import APIRouter, HTTPException
 
 from app.agents.config import USER_ID
 from models import UserProfile, UserProfileUpdate
-from user_profile import profile_store
+from profile_store import profile_store
 
 router = APIRouter(prefix="/profile", tags=["Profile"])
 

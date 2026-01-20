@@ -22,7 +22,7 @@ from app.agents.config import APP_NAME, USER_ID, LLM_ENABLED
 from app.agents.providers import PROVIDER_AGENTS
 from app.agents.runner_utils import collect_final_text
 from models import ChatRequest, ChatResponse
-from user_profile import profile_store
+from profile_store import profile_store
 
 router = APIRouter(prefix="/agent", tags=["Agent"])
 logger = logging.getLogger(__name__)
