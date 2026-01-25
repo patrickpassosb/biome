@@ -87,7 +87,9 @@ class ProfileStore:
 
     def upsert_profile(self, profile: UserProfile) -> None:
         updated_at = profile.updated_at or datetime.now()
-        self.con.execute("DELETE FROM user_profile WHERE user_id = ?", [profile.user_id])
+        self.con.execute(
+            "DELETE FROM user_profile WHERE user_id = ?", [profile.user_id]
+        )
         self.con.execute(
             """
             INSERT INTO user_profile (

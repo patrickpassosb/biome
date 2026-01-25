@@ -9,6 +9,7 @@ It uses stateless ADK sessions to ensure high availability.
 import asyncio
 import json
 import logging
+import uuid
 from typing import Optional
 
 from fastapi import APIRouter, HTTPException
@@ -18,6 +19,12 @@ from google.adk.sessions import InMemorySessionService
 from google.genai import errors, types
 
 from app.agents.config import APP_NAME, USER_ID, LLM_ENABLED
+from app.agents.monitoring import (
+    build_app,
+    clear_request_context,
+    get_request_context,
+    start_request_context,
+)
 from app.agents.providers import PROVIDER_AGENTS
 from app.agents.runner_utils import collect_final_text
 from models import WeeklyPlan, RevisePlanRequest, PlanValidationResult
@@ -33,7 +40,10 @@ async def _run_with_provider(
     prompt: str,
 ) -> Optional[str]:
     session_service = InMemorySessionService()
-    runner = Runner(agent=agent, app_name=APP_NAME, session_service=session_service)
+    runner = Runner(
+        app=build_app(agent, APP_NAME),
+        session_service=session_service,
+    )
     await session_service.create_session(
         app_name=APP_NAME, user_id=USER_ID, session_id=session_id
     )
@@ -53,14 +63,26 @@ async def _run_with_fallback(
     prompt: str,
     session_id_prefix: str,
     use_validator: bool,
+    *,
+    request_id: str,
+    endpoint: str,
 ) -> Optional[str]:
+    total_calls = 0
+    final_response = None
     for provider in PROVIDER_AGENTS:
         agent = provider.validator if use_validator else provider.coordinator
         session_id = f"{session_id_prefix}_{provider.name}"
+        start_request_context(
+            request_id=request_id,
+            endpoint=endpoint,
+            provider=provider.name,
+            session_id=session_id,
+        )
         try:
             response = await _run_with_provider(agent, session_id, prompt)
             if response:
-                return response
+                final_response = response
+                break
         except asyncio.TimeoutError:
             logger.exception(
                 "Plan run timed out after %ss (provider=%s)",
@@ -79,7 +101,29 @@ async def _run_with_fallback(
                 provider.name,
                 exc_info=err,
             )
-    return None
+        finally:
+            context = get_request_context()
+            if context:
+                total_calls += context.model_calls
+                models = sorted(context.models)
+                logger.warning(
+                    "LLM request summary (request_id=%s endpoint=%s provider=%s session_id=%s model_calls=%s models=%s)",
+                    context.request_id,
+                    context.endpoint,
+                    context.provider,
+                    context.session_id,
+                    context.model_calls,
+                    ",".join(models) if models else "unknown",
+                )
+            clear_request_context()
+    if total_calls:
+        logger.warning(
+            "LLM request total (request_id=%s endpoint=%s model_calls=%s)",
+            request_id,
+            endpoint,
+            total_calls,
+        )
+    return final_response
 
 
 @router.post("/propose", response_model=WeeklyPlan)
@@ -95,11 +139,14 @@ async def propose_plan():
             detail="Plan generation is disabled. Set AGENT_ENABLE_LLM=1 and configure Gemini/Vertex credentials.",
         )
     prompt = "Propose a new weekly training plan based on the user's data."
+    request_id = uuid.uuid4().hex[:10]
 
     final_response = await _run_with_fallback(
         prompt=prompt,
         session_id_prefix="plan_proposal_session",
         use_validator=False,
+        request_id=request_id,
+        endpoint="POST /plan/propose",
     )
 
     if final_response:
@@ -136,10 +183,13 @@ async def revise_plan(request: RevisePlanRequest):
         f"Revise the following weekly training plan based on this feedback: '{request.feedback}'.\n\n"
         f"Current Plan:\n{request.current_plan.model_dump_json()}"
     )
+    request_id = uuid.uuid4().hex[:10]
     final_response = await _run_with_fallback(
         prompt=prompt,
         session_id_prefix="plan_revision_session",
         use_validator=False,
+        request_id=request_id,
+        endpoint="POST /plan/revise",
     )
 
     if final_response:
@@ -169,10 +219,13 @@ async def validate_plan(plan: WeeklyPlan):
             detail="Plan validation is disabled. Set AGENT_ENABLE_LLM=1 and configure Gemini/Vertex credentials.",
         )
     prompt = plan.model_dump_json()
+    request_id = uuid.uuid4().hex[:10]
     final_response = await _run_with_fallback(
         prompt=prompt,
         session_id_prefix="plan_validation_session",
         use_validator=True,
+        request_id=request_id,
+        endpoint="POST /plan/validate",
     )
 
     if final_response:

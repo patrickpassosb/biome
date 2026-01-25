@@ -34,6 +34,7 @@ def test_update_profile(client, mock_firestore):
     reread_body = reread.json()
     assert reread_body["bio"] == "Focused on strength."
 
+
 def test_update_profile_rejects_invalid_numbers(client, mock_firestore):
     profile_store.clear_local()
 

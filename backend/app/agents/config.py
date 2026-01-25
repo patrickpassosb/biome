@@ -41,7 +41,5 @@ USE_VERTEX = _as_bool(
 )
 VERTEX_PROJECT = os.getenv("VERTEX_PROJECT_ID") or os.getenv("GOOGLE_CLOUD_PROJECT")
 VERTEX_LOCATION = (
-    os.getenv("VERTEX_LOCATION")
-    or os.getenv("GOOGLE_CLOUD_LOCATION")
-    or "us-central1"
+    os.getenv("VERTEX_LOCATION") or os.getenv("GOOGLE_CLOUD_LOCATION") or "us-central1"
 )

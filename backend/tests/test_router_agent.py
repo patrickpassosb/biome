@@ -15,7 +15,9 @@ def test_agent_chat_stateful(client):
     1. Turn 1: User introduces themselves.
     2. Turn 2: User asks for their name.
     """
-    with patch("routers.agent.collect_final_text", new_callable=AsyncMock) as mock_collect:
+    with patch(
+        "routers.agent.collect_final_text", new_callable=AsyncMock
+    ) as mock_collect:
         mock_collect.side_effect = [
             "I am a helpful assistant.",
             "Your name is Jules.",

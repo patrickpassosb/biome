@@ -9,6 +9,7 @@ runner using the google-adk framework.
 import asyncio
 import logging
 import time
+import uuid
 from dataclasses import dataclass
 from typing import List, Optional
 
@@ -19,6 +20,12 @@ from google.adk.sessions import InMemorySessionService
 from google.genai import errors, types
 
 from app.agents.config import APP_NAME, USER_ID, LLM_ENABLED
+from app.agents.monitoring import (
+    build_app,
+    clear_request_context,
+    get_request_context,
+    start_request_context,
+)
 from app.agents.providers import PROVIDER_AGENTS
 from app.agents.runner_utils import collect_final_text
 from models import ChatRequest, ChatResponse
@@ -48,8 +55,7 @@ provider_runners: List[ProviderRunner] = [
     ProviderRunner(
         name=provider.name,
         runner=Runner(
-            agent=provider.coordinator,
-            app_name=APP_NAME,
+            app=build_app(provider.coordinator, APP_NAME),
             session_service=session_service,
         ),
     )
@@ -86,13 +92,23 @@ async def startup_event():
         return
 
 
-async def _run_with_fallback(content: types.Content) -> Optional[str]:
+async def _run_with_fallback(
+    content: types.Content, *, request_id: str, endpoint: str
+) -> Optional[str]:
     if not provider_runners:
         return None
+    total_calls = 0
+    final_response = None
     for provider in provider_runners:
         disabled_until = provider_disabled_until.get(provider.name, 0.0)
         if time.time() < disabled_until:
             continue
+        start_request_context(
+            request_id=request_id,
+            endpoint=endpoint,
+            provider=provider.name,
+            session_id=SESSION_ID,
+        )
         try:
             response = await asyncio.wait_for(
                 collect_final_text(
@@ -104,7 +120,8 @@ async def _run_with_fallback(content: types.Content) -> Optional[str]:
                 timeout=RUN_TIMEOUT_SECONDS,
             )
             if response:
-                return response
+                final_response = response
+                break
         except asyncio.TimeoutError:
             logger.exception(
                 "Agent run timed out after %ss (provider=%s)",
@@ -127,7 +144,29 @@ async def _run_with_fallback(content: types.Content) -> Optional[str]:
                 provider.name,
                 exc_info=err,
             )
-    return None
+        finally:
+            context = get_request_context()
+            if context:
+                total_calls += context.model_calls
+                models = sorted(context.models)
+                logger.warning(
+                    "LLM request summary (request_id=%s endpoint=%s provider=%s session_id=%s model_calls=%s models=%s)",
+                    context.request_id,
+                    context.endpoint,
+                    context.provider,
+                    context.session_id,
+                    context.model_calls,
+                    ",".join(models) if models else "unknown",
+                )
+            clear_request_context()
+    if total_calls:
+        logger.warning(
+            "LLM request total (request_id=%s endpoint=%s model_calls=%s)",
+            request_id,
+            endpoint,
+            total_calls,
+        )
+    return final_response
 
 
 @router.post("/chat", response_model=ChatResponse)
@@ -168,7 +207,10 @@ User Profile Context:
         )
 
     content = types.Content(role="user", parts=[types.Part(text=full_message)])
-    response = await _run_with_fallback(content)
+    request_id = uuid.uuid4().hex[:10]
+    response = await _run_with_fallback(
+        content, request_id=request_id, endpoint="POST /agent/chat"
+    )
     if not response:
         raise HTTPException(
             status_code=502,
